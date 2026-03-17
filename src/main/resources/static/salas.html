@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Salas - DeustoCrai</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .form-reserva { border: 1px solid #ccc; padding: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>Consulta de Salas (#61)</h1>
+    <table id="tablaSalas">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Capacidad</th>
+                <th>Proyector</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <div id="seccionReserva" class="form-reserva">
+        <h2>Realizar Reserva (#66)</h2>
+        <form id="formReserva">
+            <input type="hidden" id="aulaId">
+            <p>Sala seleccionada: <span id="nombreSalaReserva"></span></p>
+            
+            <label>Inicio:</label>
+            <input type="datetime-local" id="fechaInicio" required><br><br>
+            
+            <label>Fin:</label>
+            <input type="datetime-local" id="fechaFin" required><br><br>
+            
+            <button type="submit">Confirmar Reserva</button>
+            <button type="button" onclick="cerrarFormulario()">Cancelar</button>
+        </form>
+    </div>
+
+    <script>
+        // Tarea #61: Cargar salas al iniciar
+        async function cargarSalas() {
+            const respuesta = await fetch('/api/salas');
+            const salas = await respuesta.json();
+            const cuerpoTabla = document.querySelector('#tablaSalas tbody');
+            cuerpoTabla.innerHTML = '';
+
+            salas.forEach(sala => {
+                cuerpoTabla.innerHTML += `
+                    <tr>
+                        <td>${sala.nombre}</td>
+                        <td>${sala.capacidad}</td>
+                        <td>${sala.tieneProyector ? 'Sí' : 'No'}</td>
+                        <td>
+                            <button onclick="prepararReserva(${sala.id}, '${sala.nombre}')">Reservar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Tarea #66: Mostrar formulario de reserva
+        function prepararReserva(id, nombre) {
+            document.getElementById('aulaId').value = id;
+            document.getElementById('nombreSalaReserva').innerText = nombre;
+            document.getElementById('seccionReserva').style.display = 'block';
+        }
+
+        function cerrarFormulario() {
+            document.getElementById('seccionReserva').style.display = 'none';
+        }
+
+        // Tarea #66: Envío de reserva con validación
+        document.getElementById('formReserva').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const inicio = new Date(document.getElementById('fechaInicio').value);
+            const fin = new Date(document.getElementById('fechaFin').value);
+
+            // Validación: Fecha fin posterior a inicio
+            if (fin <= inicio) {
+                alert("La fecha de fin debe ser posterior a la de inicio.");
+                return;
+            }
+
+            const reserva = {
+                aula: { id: document.getElementById('aulaId').value },
+                fechaHoraInicio: document.getElementById('fechaInicio').value,
+                fechaHoraFin: document.getElementById('fechaFin').value,
+                // Nota: En un sistema real, el usuario vendría de la sesión (Security)
+                usuario: { id: 1 } 
+            };
+
+            const response = await fetch('/api/salas/reservar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reserva)
+            });
+
+            if (response.ok) {
+                alert("Reserva realizada con éxito");
+                cerrarFormulario();
+            } else {
+                alert("Error al realizar la reserva");
+            }
+        });
+
+        cargarSalas();
+    </script>
+</body>
+</html>
