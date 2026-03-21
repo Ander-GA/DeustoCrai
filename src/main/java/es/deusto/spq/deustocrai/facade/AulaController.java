@@ -1,9 +1,10 @@
-package es.deusto.spq.deustocrai.controller;
+package es.deusto.spq.deustocrai.facade;
 
+import es.deusto.spq.deustocrai.dao.AulaRepository;
+import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Reserva;
-import es.deusto.spq.deustocrai.repository.AulaRepository;
-import es.deusto.spq.deustocrai.repository.ReservaRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

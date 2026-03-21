@@ -1,4 +1,4 @@
-package es.deusto.spq.deustocrai.repository;
+package es.deusto.spq.deustocrai.dao;
 
 import es.deusto.spq.deustocrai.entity.Aula;
 import org.springframework.data.jpa.repository.JpaRepository;
