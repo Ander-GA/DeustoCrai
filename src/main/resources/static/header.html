@@ -1,0 +1,29 @@
+<header class="main-header">
+    <div class="header-left">
+        <a href="index.html">
+            <img src="images/logoDeusto.jpg" alt="Logo Universidad de Deusto" class="logo">
+        </a>
+    </div>
+    
+    <nav class="header-nav">
+        <a href="salas.html">Reserva de Salas</a>
+        <a href="libros.html">Libros</a>
+        <a href="material.html">Material</a>
+    </nav>
+
+    <div class="header-right">
+        <a href="login.html" id="login-link" class="login-btn">Identificarse</a>
+        
+        <div id="user-menu" class="user-menu" style="display: none;">
+            <button onclick="toggleMenu()" class="dropbtn">
+                Hola, <span id="username-display">Usuario</span> <i class="fas fa-chevron-down" style="font-size: 0.8em; margin-left: 5px;"></i>
+            </button>
+            <div id="myDropdown" class="dropdown-content">
+                <a href="salas.html">Mis Reservas</a>
+                <a href="mis-prestamos.html">Mis Préstamos</a>
+                <hr>
+                <a href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
+            </div>
+        </div>
+    </div>
+</header>
