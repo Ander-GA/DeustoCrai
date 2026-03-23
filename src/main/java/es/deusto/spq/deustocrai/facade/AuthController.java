@@ -5,12 +5,15 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
+import es.deusto.spq.deustocrai.entity.User;
 import es.deusto.spq.deustocrai.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,5 +73,18 @@ public class AuthController {
         } else {
         	return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }        
+    }
+    
+    @GetMapping("/me")
+    @Operation(summary = "Obtener usuario actual", description = "Retorna los datos del usuario logueado usando su token")
+    public ResponseEntity<User> getCurrentUser(@RequestHeader("Authorization") String token) {
+        // Llamamos al método que ya tienes en tu AuthService
+        User user = authService.getEmpleadoByToken(token);
+        
+        if (user != null) {
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
     }
 }
