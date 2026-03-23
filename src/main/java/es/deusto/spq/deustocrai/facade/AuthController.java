@@ -75,6 +75,24 @@ public class AuthController {
         }        
     }
     
+    @Operation(
+        summary = "Registrar un nuevo usuario",
+        description = "Crea un nuevo usuario en el sistema con el rol especificado (STUDENT o LIBRARIAN)."
+    )
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody User user) {
+        // Es una buena práctica asegurar que el ID sea nulo para que la BD lo genere
+        user.setId(null); 
+        
+        Optional<User> registeredUser = authService.register(user);
+
+        if (registeredUser.isPresent()) {
+            return new ResponseEntity<>("Usuario registrado con éxito", HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>("El email ya está en uso", HttpStatus.BAD_REQUEST);
+        }
+    }
+    
     @GetMapping("/me")
     @Operation(summary = "Obtener usuario actual", description = "Retorna los datos del usuario logueado usando su token")
     public ResponseEntity<User> getCurrentUser(@RequestHeader("Authorization") String token) {

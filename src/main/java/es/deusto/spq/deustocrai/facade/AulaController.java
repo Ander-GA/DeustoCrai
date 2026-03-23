@@ -1,6 +1,7 @@
 package es.deusto.spq.deustocrai.facade;
 
 import es.deusto.spq.deustocrai.dao.AulaRepository;
+
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Reserva;

@@ -1,6 +1,9 @@
 package es.deusto.spq.deustocrai.entity;
 
 import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,6 +24,7 @@ public class User {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonIgnore
     private Long id;
 
     @Column(nullable = false)
