@@ -21,6 +21,8 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 100;
         }
 
         .logo-container img {
@@ -29,66 +31,83 @@
             display: block;
         }
 
-        .auth-button {
-            background-color: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 8px 16px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: all 0.3s;
-            cursor: pointer;
+        /* MENÚ DESPLEGABLE (DROPDOWN) */
+        .user-menu {
+            position: relative;
+            display: inline-block;
         }
 
-        .auth-button:hover {
+        .user-name-btn {
+            background-color: transparent;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .dropdown-content {
+            display: none; /* Oculto por defecto */
+            position: absolute;
+            right: 0;
             background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            z-index: 1;
+            margin-top: 5px;
+        }
+
+        .dropdown-content a, .dropdown-content button {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            width: 100%;
+            border: none;
+            background: none;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .dropdown-content a:hover, .dropdown-content button:hover {
+            background-color: #f1f1f1;
             color: #003366;
         }
 
-        /* CONTENIDO PRINCIPAL */
+        /* Botón de login simple cuando no hay sesión */
+        .login-btn {
+            color: white;
+            text-decoration: none;
+            border: 1px solid white;
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+
+        /* CONTENIDO CENTRAL */
         main {
             padding: 40px 20px;
             text-align: center;
         }
 
-        /* Contenedores de secciones */
-        #welcome-section, #loan-section {
-            display: none; /* Se controlan por JS */
-            background-color: #fff;
-            padding: 30px;
+        .content-area {
+            background-color: white;
+            padding: 40px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 800px;
             margin: 0 auto;
+            min-height: 200px;
         }
 
-        h1, h2, h3 { color: #003366; }
-
-        .menu-list {
-            text-align: left;
-            display: inline-block;
-            margin-top: 20px;
-        }
-
-        .menu-list ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .menu-list li {
-            margin: 10px 0;
-        }
-
-        .menu-list a {
-            color: #003366;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .menu-list a:hover {
-            text-decoration: underline;
-        }
+        h1 { color: #003366; }
+        
+        /* Clase para mostrar el menú */
+        .show { display: block; }
     </style>
 </head>
 <body>
@@ -98,45 +117,65 @@
             <img src="images/logoDeusto.jpg" alt="Logo Universidad de Deusto">
         </div>
 
-        <div id="auth-controls">
-            <a href="login.html" id="login-btn" class="auth-button">Identificarse</a>
-            <button id="logout-btn" class="auth-button" style="display:none;" onclick="cerrarSesion()">Cerrar Sesión</button>
+        <div id="auth-section">
+            <a href="login.html" id="login-link" class="login-btn">Identificarse</a>
+
+            <div id="user-dropdown" class="user-menu" style="display: none;">
+                <button onclick="toggleMenu()" class="user-name-btn">
+                    👤 <span id="username-display">Usuario</span> ▼
+                </button>
+                <div id="myDropdown" class="dropdown-content">
+                    <a href="salas.html">Mis salas reservadas</a>
+                    <a href="#">Mis préstamos de libros</a>
+                    <button onclick="cerrarSesion()" style="color: #d9534f; border-top: 1px solid #eee;">Cerrar Sesión</button>
+                </div>
+            </div>
         </div>
     </header>
 
     <main>
-        <div id="welcome-section">
-            <h1>Bienvenido a DeustoCrai</h1>
-            <p>Accede con tu cuenta para gestionar tus préstamos y reservas de salas.</p>
-        </div>
-
-        <div id="loan-section">
-            <h2>Panel de Usuario</h2>
-            <p>Bienvenido/a, <strong id="username-display">Cargando...</strong></p>
-            <hr>
-            <div class="menu-list">
-                <h3>Servicios Disponibles</h3>
-                <ul>
-                    <li><a href="salas.html">📅 Ver mis salas reservadas</a></li>
-                    <li><a href="#">📖 Mis préstamos de libros</a></li>
-                    <li><a href="#">🔍 Buscar nuevos recursos</a></li>
-                </ul>
+        <div class="content-area">
+            <div id="welcome-msg">
+                <h1>Bienvenido a DeustoCrai</h1>
+                <p>Utiliza el menú superior para gestionar tus reservas y préstamos.</p>
+            </div>
+            <div id="main-content" style="display: none;">
+                <h2>Tu Actividad Reciente</h2>
+                <p>Próximamente verás aquí tus préstamos activos...</p>
             </div>
         </div>
     </main>
 
     <script>
+        // Función para abrir/cerrar el menú desplegable
+        function toggleMenu() {
+            document.getElementById("myDropdown").classList.toggle("show");
+        }
+
+        // Cerrar el menú si se hace clic fuera de él
+        window.onclick = function(event) {
+            if (!event.target.matches('.user-name-btn')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
         async function checkAuth() {
             const token = localStorage.getItem('token');
-            const welcomeSection = document.getElementById('welcome-section');
-            const loanSection = document.getElementById('loan-section');
-            const loginBtn = document.getElementById('login-btn');
-            const logoutBtn = document.getElementById('logout-btn');
+            const loginLink = document.getElementById('login-link');
+            const userDropdown = document.getElementById('user-dropdown');
             const usernameDisplay = document.getElementById('username-display');
+            const welcomeMsg = document.getElementById('welcome-msg');
+            const mainContent = document.getElementById('main-content');
 
             if (token) {
                 try {
-                    // Llamada al Controller para obtener datos reales del usuario
+                    // Endpoint que creamos en AuthController
                     const response = await fetch('/auth/me', {
                         method: 'GET',
                         headers: { 'Authorization': token }
@@ -145,38 +184,29 @@
                     if (response.ok) {
                         const user = await response.json();
                         
-                        // Actualizar Interfaz
-                        welcomeSection.style.display = 'none';
-                        loanSection.style.display = 'block';
-                        loginBtn.style.display = 'none';
-                        logoutBtn.style.display = 'inline-block';
+                        // Ajustar visibilidad
+                        loginLink.style.display = 'none';
+                        userDropdown.style.display = 'inline-block';
+                        welcomeMsg.style.display = 'none';
+                        mainContent.style.display = 'block';
                         
-                        // Mostrar nombre real (atributo 'nombre' de tu entidad User)
+                        // Mostrar nombre real del objeto User
                         usernameDisplay.innerText = user.nombre;
                     } else {
-                        // Si el token expiró o es inválido en el servidor
                         cerrarSesion();
                     }
                 } catch (error) {
-                    console.error("Error al conectar con el servidor:", error);
-                    usernameDisplay.innerText = "Usuario (Modo Offline)";
-                    loanSection.style.display = 'block';
+                    console.error("Error al obtener usuario:", error);
+                    loginLink.style.display = 'inline-block';
                 }
-            } else {
-                // Estado por defecto: Invitado
-                welcomeSection.style.display = 'block';
-                loanSection.style.display = 'none';
-                loginBtn.style.display = 'inline-block';
-                logoutBtn.style.display = 'none';
             }
         }
 
         function cerrarSesion() {
             localStorage.removeItem('token');
-            window.location.reload();
+            window.location.href = "index.html";
         }
 
-        // Ejecutar validación al cargar la página
         window.onload = checkAuth;
     </script>
 
