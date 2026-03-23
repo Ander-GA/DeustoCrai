@@ -3,212 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeustoCrai - Biblioteca</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-
-        /* BARRA SUPERIOR */
-        header {
-            background-color: #003366; /* Azul Deusto */
-            color: #ffffff;
-            padding: 5px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 100;
-        }
-
-        .logo-container img {
-            height: 50px;
-            width: auto;
-            display: block;
-        }
-
-        /* MENÚ DESPLEGABLE (DROPDOWN) */
-        .user-menu {
-            position: relative;
-            display: inline-block;
-        }
-
-        .user-name-btn {
-            background-color: transparent;
-            color: white;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .dropdown-content {
-            display: none; /* Oculto por defecto */
-            position: absolute;
-            right: 0;
-            background-color: #ffffff;
-            min-width: 200px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            border-radius: 4px;
-            z-index: 1;
-            margin-top: 5px;
-        }
-
-        .dropdown-content a, .dropdown-content button {
-            color: #333;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            text-align: left;
-            width: 100%;
-            border: none;
-            background: none;
-            font-size: 14px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-
-        .dropdown-content a:hover, .dropdown-content button:hover {
-            background-color: #f1f1f1;
-            color: #003366;
-        }
-
-        /* Botón de login simple cuando no hay sesión */
-        .login-btn {
-            color: white;
-            text-decoration: none;
-            border: 1px solid white;
-            padding: 8px 16px;
-            border-radius: 4px;
-        }
-
-        /* CONTENIDO CENTRAL */
-        main {
-            padding: 40px 20px;
-            text-align: center;
-        }
-
-        .content-area {
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: 0 auto;
-            min-height: 200px;
-        }
-
-        h1 { color: #003366; }
-        
-        /* Clase para mostrar el menú */
-        .show { display: block; }
-    </style>
+    <title>DeustoCrai - Búsqueda</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <div id="header-placeholder"></div>
 
-    <header>
-        <div class="logo-container">
-            <img src="images/logoDeusto.jpg" alt="Logo Universidad de Deusto">
-        </div>
+    <main class="hero-section">
+        <div class="hero-content">
+            <h1>Búsqueda en DeustoCrai</h1>
+            <p>Descubre libros, revistas, artículos, reserva de salas y más...</p>
 
-        <div id="auth-section">
-            <a href="login.html" id="login-link" class="login-btn">Identificarse</a>
-
-            <div id="user-dropdown" class="user-menu" style="display: none;">
-                <button onclick="toggleMenu()" class="user-name-btn">
-                    👤 <span id="username-display">Usuario</span> ▼
+            <form class="search-box" action="#" method="GET">
+                <select class="search-scope" name="scope">
+                    <option value="todo">Todo</option>
+                    <option value="catalogo">Catálogo</option>
+                </select>
+                <input type="text" placeholder="Buscar en el catálogo de la biblioteca..." aria-label="Buscar" required>
+                <button type="submit" aria-label="Buscar">
+                    <i class="fas fa-search"></i>
                 </button>
-                <div id="myDropdown" class="dropdown-content">
-                    <a href="salas.html">Mis salas reservadas</a>
-                    <a href="#">Mis préstamos de libros</a>
-                    <button onclick="cerrarSesion()" style="color: #d9534f; border-top: 1px solid #eee;">Cerrar Sesión</button>
-                </div>
-            </div>
-        </div>
-    </header>
+            </form>
 
-    <main>
-        <div class="content-area">
-            <div id="welcome-msg">
-                <h1>Bienvenido a DeustoCrai</h1>
-                <p>Utiliza el menú superior para gestionar tus reservas y préstamos.</p>
-            </div>
-            <div id="main-content" style="display: none;">
-                <h2>Tu Actividad Reciente</h2>
-                <p>Próximamente verás aquí tus préstamos activos...</p>
+            <div class="quick-links" id="quick-links" style="display: none;">
+                <a href="salas.html" class="quick-link-btn"><i class="far fa-calendar-alt"></i> Mis Reservas</a>
+                <a href="mis-prestamos.html" class="quick-link-btn"><i class="fas fa-book-reader"></i> Mis Préstamos</a>
             </div>
         </div>
     </main>
 
-    <script>
-        // Función para abrir/cerrar el menú desplegable
-        function toggleMenu() {
-            document.getElementById("myDropdown").classList.toggle("show");
-        }
-
-        // Cerrar el menú si se hace clic fuera de él
-        window.onclick = function(event) {
-            if (!event.target.matches('.user-name-btn')) {
-                var dropdowns = document.getElementsByClassName("dropdown-content");
-                for (var i = 0; i < dropdowns.length; i++) {
-                    var openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
-                }
-            }
-        }
-
-        async function checkAuth() {
-            const token = localStorage.getItem('token');
-            const loginLink = document.getElementById('login-link');
-            const userDropdown = document.getElementById('user-dropdown');
-            const usernameDisplay = document.getElementById('username-display');
-            const welcomeMsg = document.getElementById('welcome-msg');
-            const mainContent = document.getElementById('main-content');
-
-            if (token) {
-                try {
-                    // Endpoint que creamos en AuthController
-                    const response = await fetch('/auth/me', {
-                        method: 'GET',
-                        headers: { 'Authorization': token }
-                    });
-
-                    if (response.ok) {
-                        const user = await response.json();
-                        
-                        // Ajustar visibilidad
-                        loginLink.style.display = 'none';
-                        userDropdown.style.display = 'inline-block';
-                        welcomeMsg.style.display = 'none';
-                        mainContent.style.display = 'block';
-                        
-                        // Mostrar nombre real del objeto User
-                        usernameDisplay.innerText = user.nombre;
-                    } else {
-                        cerrarSesion();
-                    }
-                } catch (error) {
-                    console.error("Error al obtener usuario:", error);
-                    loginLink.style.display = 'inline-block';
-                }
-            }
-        }
-
-        function cerrarSesion() {
-            localStorage.removeItem('token');
-            window.location.href = "index.html";
-        }
-
-        window.onload = checkAuth;
-    </script>
-
+    <script src="js/auth.js"></script>
 </body>
 </html>

@@ -1,177 +1,85 @@
+<!--
+	 This code is based on solutions provided by ChatGPT 4o and 
+	 adapted using GitHub Copilot. It has been thoroughly reviewed 
+	 and validated to ensure correctness and that it is free of errors.
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeustoCrai - Login</title>
-    <style>
-        /* Estilos generales */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        /* CABECERA (Igual que index.html) */
-        header {
-            background-color: #003366; /* Azul Deusto */
-            color: #ffffff;
-            padding: 5px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        .logo-container img {
-            height: 50px;
-            width: auto;
-            display: block;
-        }
-
-        .home-button {
-            color: #ffffff;
-            text-decoration: none;
-            border: 1px solid #ffffff;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .home-button:hover {
-            background-color: #ffffff;
-            color: #003366;
-        }
-
-        /* CONTENEDOR DE LOGIN */
-        main {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .login-card {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 350px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .login-card h3 {
-            color: #003366;
-            margin-bottom: 25px;
-            font-size: 24px;
-        }
-
-        /* INPUTS Y BOTÓN */
-        input {
-            width: 100%;
-            margin-bottom: 15px;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        input:focus {
-            border-color: #003366;
-            outline: none;
-            box-shadow: 0 0 5px rgba(0,51,102,0.2);
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #003366;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #004a94;
-        }
-
-        #mensaje {
-            margin-top: 15px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .error { color: #d9534f; }
-        .success { color: #5cb85c; }
-
-    </style>
+    <title>Identificarse - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <div id="header-placeholder"></div>
 
-    <header>
-        <div class="logo-container">
-            <img src="images/logoDeusto.jpg" alt="Logo Universidad de Deusto">
-        </div>
-        <a href="index.html" class="home-button">Inicio</a>
-    </header>
-
-    <main>
-        <div class="login-card">
-            <h3>Identificación</h3>
-            <input type="text" id="email" placeholder="Email o Usuario">
-            <input type="password" id="password" placeholder="Contraseña">
-            <button onclick="ejecutarLogin()">Entrar</button>
-            <p id="mensaje"></p>
+    <main class="login-section">
+        <div class="login-box">
+            <h2>Identificarse</h2>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" placeholder="Contraseña" required>
+                </div>
+                
+                <button type="button" onclick="login()" class="btn-primary">Entrar</button>
+            </form>
+            <p id="error-message" class="error-msg" style="display: none;">Error, compruebe sus credenciales.</p>
         </div>
     </main>
 
+    <script src="js/auth.js"></script>
+    
     <script>
-        async function ejecutarLogin() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const mensajeElement = document.getElementById('mensaje');
+        async function login() {
+            // 1. Recoger los valores que el usuario ha escrito
+            const emailInput = document.getElementById('email').value;
+            const passwordInput = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
 
-            mensajeElement.innerText = "Verificando...";
-            mensajeElement.className = "";
+            // Ocultamos el mensaje de error por si estaba visible de un intento anterior
+            errorMessage.style.display = 'none';
+
+            // Validar que los campos no estén vacíos
+            if(!emailInput || !passwordInput) {
+                errorMessage.innerText = "Por favor, rellene todos los campos.";
+                errorMessage.style.display = 'block';
+                return;
+            }
 
             try {
-                // Llamada a tu AuthController.java
+                // 2. Enviar los datos a tu backend de Spring Boot (AuthController)
                 const response = await fetch('/auth/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: emailInput, password: passwordInput })
                 });
 
+                // 3. Comprobar la respuesta
                 if (response.ok) {
-                    const token = await response.text();
-                    localStorage.setItem('token', token); // Guardamos el token de AuthService
+                    // Si el login es correcto, guardamos el token que nos devuelve el servidor
+                    const token = await response.text(); 
+                    localStorage.setItem('token', token);
                     
-                    mensajeElement.innerText = "¡Éxito! Redirigiendo...";
-                    mensajeElement.className = "success";
-                    
-                    // Redirigir al index después de 1 segundo para que vea el mensaje de éxito
-                    setTimeout(() => {
-                        window.location.href = "index.html"; 
-                    }, 1000);
+                    // Redirigimos a la página principal
+                    window.location.href = 'index.html';
                 } else {
-                    mensajeElement.innerText = "Error: Credenciales inválidas";
-                    mensajeElement.className = "error";
+                    // Si el servidor devuelve un error (credenciales incorrectas), mostramos el mensaje
+                    errorMessage.innerText = "Error, compruebe sus credenciales.";
+                    errorMessage.style.display = 'block';
                 }
             } catch (error) {
-                mensajeElement.innerText = "Error de conexión con el servidor";
-                mensajeElement.className = "error";
+                console.error("Error al conectar con el servidor:", error);
+                errorMessage.innerText = "Error de conexión con el servidor.";
+                errorMessage.style.display = 'block';
             }
         }
     </script>
