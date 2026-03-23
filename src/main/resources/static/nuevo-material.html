@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>DeustoCrai - Nuevo Material</title>
+    <style>
+        /* Estilos para que se vea ordenado */
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h2 { color: #003366; text-align: center; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; background-color: #003366; color: white; padding: 10px; border: none; border-radius: 4px; margin-top: 20px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #004a94; }
+        .volver { display: block; text-align: center; margin-top: 15px; text-decoration: none; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Añadir Nuevo Material</h2>
+    
+    <form id="formMaterial">
+        <label>Nombre del Objeto (Título):</label>
+        <input type="text" id="titulo" placeholder="Ej: Portátil Dell Latitude" required>
+
+        <label>Número de Serie:</label>
+        <input type="text" id="numeroSerie" placeholder="Ej: SN-98765" required>
+
+        <label>Tipo de Material:</label>
+        <select id="tipo">
+            <option value="Portatil">Portátil</option>
+            <option value="Camara">Cámara</option>
+            <option value="Proyector">Proyector</option>
+            <option value="Otro">Otro</option>
+        </select>
+
+        <button type="submit">Guardar Material</button>
+    </form>
+
+    <a href="index.html" class="volver">← Volver al Inicio</a>
+</div>
+
+<script>
+    // Esta función se activa cuando pulsas el botón "Guardar"
+    document.getElementById('formMaterial').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Evita que la página se recargue
+
+        // 1. Recogemos los datos de los cuadritos que ha escrito el usuario
+        const materialData = {
+            titulo: document.getElementById('titulo').value,
+            numeroSerie: document.getElementById('numeroSerie').value,
+            tipo: document.getElementById('tipo').value,
+            disponible: true // Por defecto, al crearlo está disponible
+        };
+
+        try {
+            // 2. Enviamos los datos al servidor (al controlador que creamos en el Paso 2)
+            const response = await fetch('/api/materiales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(materialData)
+            });
+
+            // 3. Si todo sale bien, avisamos y limpiamos el formulario
+            if (response.ok) {
+                alert("¡Éxito! El material ha sido registrado.");
+                document.getElementById('formMaterial').reset();
+            } else {
+                alert("Hubo un error al guardar.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("No se pudo conectar con el servidor.");
+        }
+    });
+</script>
+
+</body>
+</html>
