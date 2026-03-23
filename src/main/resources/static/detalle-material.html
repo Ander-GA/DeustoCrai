@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>DeustoCrai - Detalle de Material</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .detail-container { max-width: 600px; margin: 50px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .detail-item { margin-bottom: 15px; font-size: 1.2rem; }
+        .detail-label { font-weight: bold; color: #003366; }
+        .status-badge { padding: 5px 10px; border-radius: 4px; font-size: 0.9rem; font-weight: bold; }
+        .available { background-color: #d4edda; color: #155724; }
+        .unavailable { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="detail-container">
+        <h2>Detalle del Recurso</h2>
+        <hr><br>
+        <div id="material-content">
+            <p>Cargando información...</p>
+        </div>
+        <br>
+        <a href="index.html" class="btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Volver al catálogo</a>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        async function cargarDetalle() {
+            // Obtener el ID del material desde la URL (ej: detalle-material.html?id=1)
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+
+            if (!id) {
+                document.getElementById('material-content').innerHTML = "<p>Error: No se proporcionó un ID de material.</p>";
+                return;
+            }
+
+            try {
+                // Llamada a la API que diseñaste en la tarea #46
+                const response = await fetch(`/api/materiales`);
+                const materiales = await response.json();
+                
+                // Buscamos el material específico en la lista
+                const material = materiales.find(m => m.id == id);
+
+                if (material) {
+                    const statusClass = material.disponible ? 'available' : 'unavailable';
+                    const statusText = material.disponible ? 'Disponible' : 'No disponible';
+
+                    document.getElementById('material-content').innerHTML = `
+                        <div class="detail-item"><span class="detail-label">Título:</span> ${material.titulo}</div>
+                        <div class="detail-item"><span class="detail-label">Número de Serie:</span> ${material.numeroSerie}</div>
+                        <div class="detail-item"><span class="detail-label">Tipo:</span> ${material.tipo}</div>
+                        <div class="detail-item">
+                            <span class="detail-label">Estado:</span> 
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('material-content').innerHTML = "<p>Material no encontrado.</p>";
+                }
+            } catch (error) {
+                console.error("Error al cargar detalle:", error);
+                document.getElementById('material-content').innerHTML = "<p>Error al conectar con el servidor.</p>";
+            }
+        }
+
+        // Ejecutar al cargar la página
+        window.addEventListener('load', () => {
+            setTimeout(cargarDetalle, 500); // Esperamos un poco a que cargue el header
+        });
+    </script>
+</body>
+</html>
