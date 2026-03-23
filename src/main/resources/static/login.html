@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeustoCrai - Login</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* CABECERA (Igual que index.html) */
+        header {
+            background-color: #003366; /* Azul Deusto */
+            color: #ffffff;
+            padding: 5px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .logo-container img {
+            height: 50px;
+            width: auto;
+            display: block;
+        }
+
+        .home-button {
+            color: #ffffff;
+            text-decoration: none;
+            border: 1px solid #ffffff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .home-button:hover {
+            background-color: #ffffff;
+            color: #003366;
+        }
+
+        /* CONTENEDOR DE LOGIN */
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .login-card h3 {
+            color: #003366;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        /* INPUTS Y BOTÓN */
+        input {
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input:focus {
+            border-color: #003366;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0,51,102,0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #003366;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #004a94;
+        }
+
+        #mensaje {
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .error { color: #d9534f; }
+        .success { color: #5cb85c; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="images/logoDeusto.jpg" alt="Logo Universidad de Deusto">
+        </div>
+        <a href="index.html" class="home-button">Inicio</a>
+    </header>
+
+    <main>
+        <div class="login-card">
+            <h3>Identificación</h3>
+            <input type="text" id="email" placeholder="Email o Usuario">
+            <input type="password" id="password" placeholder="Contraseña">
+            <button onclick="ejecutarLogin()">Entrar</button>
+            <p id="mensaje"></p>
+        </div>
+    </main>
+
+    <script>
+        async function ejecutarLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const mensajeElement = document.getElementById('mensaje');
+
+            mensajeElement.innerText = "Verificando...";
+            mensajeElement.className = "";
+
+            try {
+                // Llamada a tu AuthController.java
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const token = await response.text();
+                    localStorage.setItem('token', token); // Guardamos el token de AuthService
+                    
+                    mensajeElement.innerText = "¡Éxito! Redirigiendo...";
+                    mensajeElement.className = "success";
+                    
+                    // Redirigir al index después de 1 segundo para que vea el mensaje de éxito
+                    setTimeout(() => {
+                        window.location.href = "index.html"; 
+                    }, 1000);
+                } else {
+                    mensajeElement.innerText = "Error: Credenciales inválidas";
+                    mensajeElement.className = "error";
+                }
+            } catch (error) {
+                mensajeElement.innerText = "Error de conexión con el servidor";
+                mensajeElement.className = "error";
+            }
+        }
+    </script>
+</body>
+</html>
