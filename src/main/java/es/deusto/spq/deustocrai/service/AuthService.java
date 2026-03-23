@@ -51,7 +51,15 @@ public class AuthService {
             return Optional.empty();
         }
     }
-    
+    public Optional<User> register(User newUser) {
+        // 1. Verificar si el email ya está registrado en la BD
+        if (userRepository.findByEmail(newUser.getEmail()).isPresent()) {
+            return Optional.empty();
+        }
+        
+        // 2. Guardar el nuevo usuario
+        return Optional.of(userRepository.save(newUser));
+    }
     // Method to get the Empleado based on the token
     public User getEmpleadoByToken(String token) {
         return tokenStore.get(token); 

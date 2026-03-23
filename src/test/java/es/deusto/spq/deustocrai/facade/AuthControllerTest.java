@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
+import es.deusto.spq.deustocrai.entity.User;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -58,5 +59,38 @@ public class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(wrongRequest)))
                 // Validar que el servicio deniega el acceso con 401
                 .andExpect(status().isUnauthorized());
+    }
+    @Test
+    @DisplayName("Debería registrar un usuario correctamente y devolver 201 Created")
+    public void testRegisterSuccess() throws Exception {
+        User newUser = new User();
+        newUser.setEmail("nuevo@deusto.es");
+        newUser.setPassword("password123");
+        newUser.setNombre("Prueba");
+        newUser.setApellidos("Test");
+        // Usamos el Enum que ya tienes en la entidad User
+        newUser.setRole(User.Role.ESTUDIANTE); 
+
+        mockMvc.perform(post("/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(newUser)))
+                .andExpect(status().isCreated())
+                .andExpect(content().string("Usuario registrado con éxito"));
+    }
+
+    @Test
+    @DisplayName("Debería fallar al registrar un usuario con un email que ya existe")
+    public void testRegisterFailureDuplicateEmail() throws Exception {
+        // Usamos el email "1" que sabemos que ya existe por el DataInitializer
+        User duplicateUser = new User();
+        duplicateUser.setEmail("1"); 
+        duplicateUser.setPassword("otra-password");
+        duplicateUser.setNombre("Duplicado");
+
+        mockMvc.perform(post("/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(duplicateUser)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("El email ya está en uso"));
     }
 }
