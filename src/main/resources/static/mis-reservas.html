@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>DeustoCrai - Mis Reservas</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <main class="container" style="padding: 40px; max-width: 800px; margin: auto;">
+        <h2 style="color: #003366;">Mis Reservas de Salas</h2>
+        <hr>
+        <div id="lista-reservas" style="margin-top: 20px;">
+            <p>Cargando tus reservas...</p>
+        </div>
+        <br>
+        <a href="index.html" class="btn-primary" style="text-decoration:none; display:inline-block; text-align:center;">Volver al Inicio</a>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        async function cargarReservas() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                // 1. Obtener datos del usuario logueado para tener su ID
+                const userResp = await fetch('/auth/me', { headers: { 'Authorization': token } });
+                const user = await userResp.json();
+
+                // 2. Llamar al endpoint de AulaController que filtra por usuario
+                const response = await fetch(`/api/salas/usuario/${user.id}`);
+                const reservas = await response.json();
+                const container = document.getElementById('lista-reservas');
+                
+                if (reservas.length === 0) {
+                    container.innerHTML = "<p>No tienes reservas realizadas.</p>";
+                    return;
+                }
+
+                // 3. Mostrar la lista
+                container.innerHTML = reservas.map(r => `
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <strong>Sala:</strong> ${r.aula.nombre} <br>
+                        <strong>Fecha:</strong> ${new Date(r.fechaHoraInicio).toLocaleDateString()} <br>
+                        <strong>Horario:</strong> ${new Date(r.fechaHoraInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+                                         ${new Date(r.fechaHoraFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById('lista-reservas').innerHTML = "<p>Error al cargar las reservas.</p>";
+            }
+        }
+        // Esperar a que cargue el header inyectado por auth.js
+        window.onload = () => setTimeout(cargarReservas, 500);
+    </script>
+</body>
+</html>
