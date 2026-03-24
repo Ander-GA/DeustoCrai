@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.dao.AulaRepository;
 import es.deusto.spq.deustocrai.dao.LibroRepository;
+import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.User;
 import es.deusto.spq.deustocrai.entity.Aula;
@@ -27,12 +28,14 @@ public class DataInitializer {
             UserRepository userRepository,
             AulaRepository aulaRepository,
             LibroRepository libroRepository,
-            ReservaRepository reservaRepository) {
+            ReservaRepository reservaRepository,
+            PrestamoRepository prestamoRepository) {
 
         return args -> {
             // 1. Limpiar datos previos para evitar duplicados al reiniciar
-            userRepository.deleteAll();
-            aulaRepository.deleteAll();
+            prestamoRepository.deleteAll();
+            reservaRepository.deleteAll();
+        	userRepository.deleteAll();
             libroRepository.deleteAll();
             aulaRepository.deleteAll();
 
