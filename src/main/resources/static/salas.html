@@ -162,40 +162,54 @@
             renderVisualCalendar();
         }
 
-        async function confirmarReserva() {
-            const token = localStorage.getItem('token');
-            const fecha = document.getElementById('reserva-fecha').value;
-            const hora = document.getElementById('reserva-hora').value;
+		async function confirmarReserva() {
+		    const token = localStorage.getItem('token');
+		    const fecha = document.getElementById('reserva-fecha').value;
+		    const hora = document.getElementById('reserva-hora').value;
 
-            if(!fecha) { alert("Selecciona una fecha"); return; }
+		    if(!fecha) { alert("Selecciona fecha"); return; }
 
-            const inicio = `${fecha}T${hora}:00`;
-            const dFin = new Date(`${fecha}T${hora}:00`);
-            dFin.setHours(dFin.getHours() + 3);
-            const fin = dFin.toISOString().split('.')[0];
+		    const inicio = `${fecha}T${hora}:00`;
+		    const dFin = new Date(`${fecha}T${hora}:00`);
+		    dFin.setHours(dFin.getHours() + 3);
+		    const fin = dFin.toISOString().split('.')[0];
 
-            const reserva = {
-                usuario: { id: usuarioActual.id }, // Se asigna el usuario logueado
-                aula: { id: salaActual.id },
-                fechaHoraInicio: inicio,
-                fechaHoraFin: fin
-            };
+		    const reserva = {
+		        usuario: { id: usuarioActual.id }, // Punto 3: Guardar con el usuario actual
+		        aula: { id: salaActual.id },
+		        fechaHoraInicio: inicio,
+		        fechaHoraFin: fin
+		    };
 
-            try {
-                const response = await fetch('/api/salas/reservar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
-                    body: JSON.stringify(reserva)
-                });
+		    try {
+		        const response = await fetch('/api/salas/reservar', {
+		            method: 'POST',
+		            headers: { 'Content-Type': 'application/json', 'Authorization': token },
+		            body: JSON.stringify(reserva)
+		        });
 
-                if (response.ok) {
-                    alert("Reserva realizada con éxito");
-                    await renderVisualCalendar(); // Refresca ocupación tras éxito
-                } else {
-                    alert("La sala ya está ocupada en ese horario.");
-                }
-            } catch (e) { console.error(e); }
-        }
+		        if (response.ok) {
+		            alert("Reserva guardada en la base de datos.");
+		            window.location.href = "index.html"; // Punto 2: Redirigir al inicio
+		        } else {
+		            alert("Error: La sala ya está ocupada.");
+		        }
+		    } catch (e) { console.error(e); }
+		}
+		
+		async function cargarMisReservas() {
+		    const resp = await fetch(`/api/salas/usuario/${usuarioActual.id}`);
+		    const misReservas = await resp.json();
+		    
+		    const listaHtml = misReservas.map(r => `
+		        <li>
+		            <strong>${r.aula.nombre}</strong>: 
+		            ${new Date(r.fechaHoraInicio).toLocaleString()}
+		        </li>
+		    `).join('');
+		    
+		    document.getElementById('contenedor-reservas').innerHTML = listaHtml;
+		}
 
         function navegarSemana(dias) {
             fechaReferencia.setDate(fechaReferencia.getDate() + dias);

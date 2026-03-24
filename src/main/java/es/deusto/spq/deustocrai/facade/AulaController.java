@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/salas")
@@ -32,13 +33,18 @@ public class AulaController {
 
     @PostMapping("/reservar")
     public ResponseEntity<?> reservarSala(@RequestBody Reserva reserva) {
-        // Se utiliza el servicio para validar y persistir en la base de datos
         return reservaService.realizarReserva(reserva)
-            .<ResponseEntity<?>>map(nueva -> new ResponseEntity<>(nueva, HttpStatus.OK)) 
-            .orElseGet(() -> new ResponseEntity<>(
-                "La sala ya está reservada en esta franja horaria.", 
-                HttpStatus.CONFLICT
-            ));
+            .<ResponseEntity<?>>map(nueva -> ResponseEntity.ok(nueva)) 
+            .orElseGet(() -> ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("La sala ya está reservada en esta franja horaria."));
+    }
+
+    // Endpoint para obtener las reservas del usuario logueado (Punto 1)
+    @GetMapping("/usuario/{usuarioId}")
+    public List<Reserva> listarReservasUsuario(@PathVariable Long usuarioId) {
+        return reservaRepository.findAll().stream()
+                .filter(r -> r.getUsuario().getId().equals(usuarioId))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}/reservas")
