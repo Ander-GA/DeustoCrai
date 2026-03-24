@@ -1,7 +1,7 @@
 package es.deusto.spq.deustocrai.facade;
 
-import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
+import es.deusto.spq.deustocrai.service.LibroService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,26 +14,29 @@ import java.util.List;
 public class LibroController {
 
     @Autowired
-    private LibroRepository libroRepository;
+    private LibroService libroService;
 
     @PostMapping
     public ResponseEntity<Libro> anadirLibro(@RequestBody Libro libro) {
-        libro.setDisponible(true); 
-        Libro nuevo = libroRepository.save(libro);
+        // Delegamos la creación al servicio
+        Libro nuevo = libroService.anadirLibro(libro);
         return new ResponseEntity<>(nuevo, HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> borrarLibro(@PathVariable Long id) {
-        if (libroRepository.existsById(id)) {
-            libroRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
+        // El servicio nos dice si lo ha podido borrar o no
+        boolean borrado = libroService.borrarLibro(id);
+        
+        if (borrado) {
+            return ResponseEntity.noContent().build(); 
+        } else {
+            return ResponseEntity.notFound().build(); 
         }
-        return ResponseEntity.notFound().build();
     }
 
     @GetMapping
     public List<Libro> listarLibros() {
-        return libroRepository.findAll();
+        return libroService.listarLibros();
     }
 }

@@ -4,3 +4,6 @@ CREATE SCHEMA deustocrai_db;
 CREATE USER IF NOT EXISTS 'spq'@'%' IDENTIFIED BY 'spq';
 GRANT ALL ON deustocrai_db.* TO 'spq'@'%';
 
+USE deustocrai_db;
+SHOW TABLES;
+SELECT * FROM prestamo;
