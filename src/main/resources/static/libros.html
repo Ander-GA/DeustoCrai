@@ -1,3 +1,8 @@
+<!--	
+	Este código se basa en proyectos anteriores de otras asignaturas
+	y soluciones proporcionadas por Gemini
+-->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -80,12 +85,12 @@
                 
                 if(response.ok) {
                     alert("¡Libro reservado con éxito! Puedes gestionarlo desde 'Mis Préstamos'.");
-                    cargarLibros(); // Recargamos para que el botón desaparezca y salga "Prestado"
+                    cargarLibros(); 
                 } else if (response.status === 401 || response.status === 403) {
                     alert("Tu sesión ha caducado. Vuelve a iniciar sesión.");
                     window.location.href = "login.html";
                 } else {
-                    alert("Lo sentimos, este libro acaba de ser reservado por otra persona.");
+                    alert("Error del servidor (Código: ${response.status}). Revisa la consola de Java para más detalles.");
                 }
             } catch (e) {
                 console.error("Error en la reserva:", e);
