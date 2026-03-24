@@ -3,6 +3,9 @@ package es.deusto.spq.deustocrai.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 @Entity
 @Table(name = "reserva")
 public class Reserva {
@@ -17,6 +20,7 @@ public class Reserva {
 
     @ManyToOne
     @JoinColumn(name = "aula_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Aula aula;
 
     @Column(nullable = false)

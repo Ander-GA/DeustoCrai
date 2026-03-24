@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.dao.AulaRepository;
 import es.deusto.spq.deustocrai.dao.LibroRepository;
+import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.User;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Libro;
@@ -22,15 +23,18 @@ public class DataInitializer {
 
     @Bean
     CommandLineRunner initData(
+    		
             UserRepository userRepository,
             AulaRepository aulaRepository,
-            LibroRepository libroRepository) {
+            LibroRepository libroRepository,
+            ReservaRepository reservaRepository) {
 
         return args -> {
             // 1. Limpiar datos previos para evitar duplicados al reiniciar
             userRepository.deleteAll();
             aulaRepository.deleteAll();
             libroRepository.deleteAll();
+            aulaRepository.deleteAll();
 
             // 2. Crear Usuarios (los mismos de tu proyecto anterior)
             // Nota: He usado el constructor y setters basándome en tu entidad User

@@ -4,51 +4,86 @@
     <meta charset="UTF-8">
     <title>Reserva de Salas - DeustoCrai</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --gris-claro: #d1d1d1; --gris-oscuro: #a8a8a8; --azul-deusto: #003366; }
-        body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background-color: #f4f4f4; }
         
-        /* BARRA LATERAL (Panel Izquierdo) */
-        .sidebar { width: 350px; background-color: var(--gris-claro); padding: 20px; border-right: 2px solid #ccc; overflow-y: auto; }
-        .user-header { background: white; padding: 10px; display: flex; align-items: center; gap: 10px; border-radius: 4px; margin-bottom: 20px; color: var(--azul-deusto); }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            display: flex !important; 
+            flex-direction: row !important;
+            width: 100vw;
+            height: 100vh; 
+            background-color: #f4f4f4; 
+            overflow: hidden; 
+        }
+
+        #selector-sala-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f4f4f4; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .sidebar { 
+            width: 350px !important; 
+            min-width: 350px !important; 
+            height: 100vh;
+            background-color: var(--gris-claro); 
+            padding: 20px; 
+            border-right: 2px solid #ccc; 
+            overflow-y: auto; 
+            display: none; 
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .main-panel { 
+            flex-grow: 1; 
+            height: 100vh;
+            padding: 20px; 
+            display: none; 
+            flex-direction: column;
+            box-sizing: border-box;
+            background: white;
+            overflow: hidden;
+        }
+
+        .cards-container { display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
+        .sala-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 250px; }
         
+        .user-header { background: white; padding: 10px; display: flex; align-items: center; gap: 10px; border-radius: 4px; margin-bottom: 20px; color: var(--azul-deusto); font-size: 0.9em; }
         .section-title { background-color: var(--gris-oscuro); color: white; padding: 8px; text-align: center; font-weight: bold; margin: 15px 0 5px 0; border-radius: 2px; }
-        .input-box { background: white; display: flex; align-items: center; border: 1px solid #999; border-radius: 4px; overflow: hidden; }
+        .input-box { background: white; display: flex; align-items: center; border: 1px solid #999; border-radius: 4px; margin-bottom: 10px; }
         .input-box i { padding: 10px; background: #eee; border-right: 1px solid #999; }
         .input-box input, .input-box select { border: none; padding: 10px; width: 100%; outline: none; }
+        .btn-reservar { width: 100%; background: var(--azul-deusto); color: white; padding: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-        .estudiantes-list input { width: calc(50% - 5px); padding: 8px; margin-top: 5px; border: 1px solid #999; border-radius: 4px; }
-        .btn-reservar { width: 100%; background: var(--azul-deusto); color: white; padding: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-
-        /* PANEL CALENDARIO (Panel Derecho) */
-        .main-panel { flex: 1; padding: 20px; display: flex; flex-direction: column; }
-        .calendar-header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; border-bottom: 2px solid #eee; }
-        .calendar-grid { background: white; flex: 1; display: grid; grid-template-columns: 80px repeat(7, 1fr); border-radius: 0 0 8px 8px; overflow: auto; }
-        
-        .time-slot { height: 60px; border: 0.5px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.8em; }
-        .day-header { text-align: center; padding: 10px; font-weight: bold; border-bottom: 2px solid var(--azul-deusto); }
-        
-        /* Bloques de disponibilidad */
-        .bloque { margin: 2px; padding: 5px; border-radius: 4px; font-size: 0.75em; text-align: center; color: white; cursor: pointer; }
-        .bloque.no { background-color: #7d8cc4; } /* Azulado/gris como en tu imagen */
-        .bloque.si { background-color: #28a745; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; }
+        .calendar-grid { flex: 1; display: grid; grid-template-columns: 80px repeat(7, 1fr); border: 1px solid #ddd; overflow-y: auto; }
+        .time-slot { height: 50px; border: 0.5px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.8em; }
+        .day-header { text-align: center; padding: 10px; font-weight: bold; border-bottom: 2px solid var(--azul-deusto); background: #f9f9f9; }
+        .ocupado { background-color: #d9534f; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
+    <div id="selector-sala-container">
+        <h1 style="color: var(--azul-deusto)">Reserva de Salas CRAI</h1>
+        <div id="lista-salas" class="cards-container"></div>
+    </div>
+
+    <aside class="sidebar" id="sidebar-reserva">
         <div class="user-header">
-            <i class="fas fa-envelope fa-2x"></i>
-            <span id="user-email">cargando...</span>
+            <i class="fas fa-user-circle fa-2x"></i>
+            <span id="display-user-email">Cargando usuario...</span>
         </div>
+        <h2 id="sala-nombre-display" style="text-align:center; color: var(--azul-deusto)"></h2>
 
-        <div class="section-title">Fecha:</div>
-        <div class="input-box">
-            <i class="fas fa-calendar-alt"></i>
-            <input type="date" id="reserva-fecha" onchange="renderCalendar()">
-        </div>
+        <div class="section-title">Fecha de Reserva:</div>
+        <div class="input-box"><i class="fas fa-calendar-alt"></i><input type="date" id="reserva-fecha" onchange="actualizarCalendarioPorFecha()"></div>
 
-        <div class="section-title">Hora:</div>
+        <div class="section-title">Franja Horaria:</div>
         <div class="input-box">
             <i class="fas fa-clock"></i>
             <select id="reserva-hora">
@@ -59,72 +94,157 @@
             </select>
         </div>
 
-        <div class="section-title">Facultad:</div>
-        <div class="input-box">
-            <select id="facultad">
-                <option>- Selecciona facultad -</option>
-                <option>Ingeniería</option>
-                <option>Derecho</option>
-                <option>EBS</option>
-            </select>
-        </div>
+        <div class="section-title">Acompañantes</div>
+        <div id="estudiantes-list" style="padding: 10px; background: white; border-radius: 4px;"></div>
 
-        <div class="section-title">Estudiantes (mín. 2 y máx. 6)</div>
-        <div class="estudiantes-list">
-            <input type="text" placeholder="Estudiante 2"> @opendeusto.es<br>
-            <input type="text" placeholder="Estudiante 3"> @opendeusto.es
-        </div>
-
-        <button class="btn-reservar" onclick="hacerReserva()">RESERVAR SALA</button>
+        <button class="btn-reservar" onclick="confirmarReserva()">CONFIRMAR RESERVA</button>
+        <button onclick="window.location.reload()" style="background:none; border:none; color:#666; width:100%; margin-top:15px; cursor:pointer; text-decoration: underline;">← Cambiar sala</button>
     </aside>
 
-    <main class="main-panel">
+    <main class="main-panel" id="panel-calendario">
         <div class="calendar-header">
-            <h3>Mar de 2026</h3>
+            <h3 id="mes-anio-label">MARZO DE 2026</h3>
             <div>
-                <button><i class="fas fa-chevron-left"></i></button>
-                <button><i class="fas fa-chevron-right"></i></button>
+                <button onclick="navegarSemana(-7)"><i class="fas fa-chevron-left"></i> Anterior</button>
+                <button onclick="navegarSemana(7)">Siguiente <i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
-        <div class="calendar-grid" id="calendar-grid">
-            </div>
+        <div id="calendar-grid" class="calendar-grid"></div>
     </main>
 
     <script>
+        let fechaReferencia = new Date("2026-03-23");
+        let salaActual = null;
+        let usuarioActual = null;
         const days = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
-        const hours = ["6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM", "12 PM"];
+        const franjas = ["08:30", "11:30", "14:30", "17:30"];
 
-        function renderCalendar() {
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '<div class="time-slot"></div>'; // Esquina vacía
+        async function cargarUsuarioSesion() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'login.html'; return; }
+            try {
+                const response = await fetch('/auth/me', { headers: { 'Authorization': token } });
+                if (response.ok) {
+                    usuarioActual = await response.json();
+                    document.getElementById('display-user-email').innerText = usuarioActual.email;
+                }
+            } catch (e) { console.error("Error sesión", e); }
+        }
+
+        async function init() {
+            await cargarUsuarioSesion();
+            try {
+                const resp = await fetch('/api/salas');
+                const salas = await resp.json();
+                const container = document.getElementById('lista-salas');
+                container.innerHTML = salas.map(s => `
+                    <div class="sala-card">
+                        <h3>${s.nombre}</h3>
+                        <p>Capacidad: ${s.capacidad}</p>
+                        <button class="btn-reservar" onclick="abrirCalendarioSala(${s.id}, '${s.nombre}', ${s.capacidad})">RESERVAR</button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        function abrirCalendarioSala(id, nombre, capacidad) {
+            salaActual = { id, nombre, capacidad };
+            document.getElementById('selector-sala-container').style.display = 'none';
+            document.getElementById('sidebar-reserva').style.display = 'block'; 
+            document.getElementById('panel-calendario').style.display = 'flex'; 
+            document.getElementById('sala-nombre-display').innerText = nombre;
             
-            // Cabecera de días
-            days.forEach(d => grid.innerHTML += `<div class="day-header">${d}</div>`);
+            const list = document.getElementById('estudiantes-list');
+            list.innerHTML = '';
+            for(let i = 2; i <= capacidad; i++) {
+                list.innerHTML += `<div style="margin-bottom:8px"><input type="text" placeholder="Estudiante ${i}" style="width:130px; padding:5px"> @opendeusto.es</div>`;
+            }
+            renderVisualCalendar();
+        }
 
-            // Filas de horas
-            hours.forEach((h, index) => {
-                grid.innerHTML += `<div class="time-slot">${h}</div>`;
+        async function confirmarReserva() {
+            const token = localStorage.getItem('token');
+            const fecha = document.getElementById('reserva-fecha').value;
+            const hora = document.getElementById('reserva-hora').value;
+
+            if(!fecha) { alert("Selecciona una fecha"); return; }
+
+            const inicio = `${fecha}T${hora}:00`;
+            const dFin = new Date(`${fecha}T${hora}:00`);
+            dFin.setHours(dFin.getHours() + 3);
+            const fin = dFin.toISOString().split('.')[0];
+
+            const reserva = {
+                usuario: { id: usuarioActual.id }, // Se asigna el usuario logueado
+                aula: { id: salaActual.id },
+                fechaHoraInicio: inicio,
+                fechaHoraFin: fin
+            };
+
+            try {
+                const response = await fetch('/api/salas/reservar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(reserva)
+                });
+
+                if (response.ok) {
+                    alert("Reserva realizada con éxito");
+                    await renderVisualCalendar(); // Refresca ocupación tras éxito
+                } else {
+                    alert("La sala ya está ocupada en ese horario.");
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function navegarSemana(dias) {
+            fechaReferencia.setDate(fechaReferencia.getDate() + dias);
+            renderVisualCalendar();
+        }
+
+        function actualizarCalendarioPorFecha() {
+            const val = document.getElementById('reserva-fecha').value;
+            if(val) {
+                fechaReferencia = new Date(val);
+                renderVisualCalendar();
+            }
+        }
+
+        async function renderVisualCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const label = document.getElementById('mes-anio-label');
+            label.innerText = fechaReferencia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            
+            grid.innerHTML = '<div class="time-slot" style="background:#eee;"></div>';
+            const lunes = new Date(fechaReferencia);
+            const dayNum = lunes.getDay() || 7;
+            lunes.setDate(lunes.getDate() - dayNum + 1);
+
+            let reservas = [];
+            try {
+                const resp = await fetch(`/api/salas/${salaActual.id}/reservas`); // Obtiene reservas del backend
+                if(resp.ok) reservas = await resp.json();
+            } catch(e) { console.error(e); }
+
+            for(let i=0; i<7; i++) {
+                let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+                grid.innerHTML += `<div class="day-header">${days[i]}<br><span style="font-size:0.8em;">${d.getDate()}/${d.getMonth()+1}</span></div>`;
+            }
+
+            franjas.forEach(h => {
+                grid.innerHTML += `<div class="time-slot" style="font-weight:bold; background:#f9f9f9;">${h}</div>`;
                 for(let i=0; i<7; i++) {
-                    let content = "";
-                    // Simulación de "No disponible" como en tu imagen
-                    if(i === 0 && index === 3) {
-                        content = `<div class="bloque no">no disponible<br>8:30-11:30</div>`;
-                    }
-                    grid.innerHTML += `<div class="time-slot">${content}</div>`;
+                    let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+                    let fStr = d.toISOString().split('T')[0];
+                    // Compara con las reservas reales para marcar ocupación
+                    let ocupado = reservas.some(r => r.fechaHoraInicio.startsWith(fStr) && r.fechaHoraInicio.includes(h));
+                    
+                    grid.innerHTML += `<div class="time-slot">${ocupado ? '<div class="ocupado">OCUPADO</div>' : ''}</div>`;
                 }
             });
         }
 
-        async function hacerReserva() {
-            // Lógica para enviar al endpoint /api/salas/reservar
-            alert("Enviando reserva...");
-        }
-
-        window.onload = () => {
-            document.getElementById('user-email').innerText = "emilio.gildelrio@opendeusto.es";
-            document.getElementById('reserva-fecha').value = "2026-03-23";
-            renderCalendar();
-        };
+        window.onload = init;
     </script>
 </body>
 </html>
