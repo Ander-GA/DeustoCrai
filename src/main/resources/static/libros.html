@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Catálogo de Libros - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .container { max-width: 800px; margin: 40px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .libro-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ddd; }
+        .libro-item:last-child { border-bottom: none; }
+        .disponible { color: #28a745; font-weight: bold; }
+        .no-disponible { color: #dc3545; font-weight: bold; }
+        .btn-accion { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; transition: background-color 0.3s; }
+        .btn-prestar { background-color: var(--azul-deusto); }
+        .btn-prestar:hover { background-color: #002244; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <main class="container">
+        <h2>Catálogo de Libros</h2>
+        <hr style="margin-bottom: 20px; border: 0; border-top: 1px solid #eee;">
+        
+        <div id="lista-libros">
+            <p style="text-align: center; color: #666;">Cargando catálogo...</p>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        async function cargarLibros() {
+            try {
+                const response = await fetch('/api/libros');
+                const libros = await response.json();
+                const lista = document.getElementById('lista-libros');
+                
+                if (libros.length === 0) {
+                    lista.innerHTML = '<p style="text-align: center;">No hay libros disponibles en el catálogo en este momento.</p>';
+                    return;
+                }
+
+                lista.innerHTML = ''; // Limpiamos el texto de "Cargando..."
+                
+                libros.forEach(libro => {
+                    const estado = libro.disponible ? '<span class="disponible">Disponible</span>' : '<span class="no-disponible">Prestado</span>';
+                    const btnPrestar = libro.disponible ? `<button class="btn-accion btn-prestar" onclick="prestarLibro(${libro.id})">Reservar Libro</button>` : '';
+                    
+                    lista.innerHTML += `
+                        <div class="libro-item">
+                            <div>
+                                <strong style="font-size: 1.1rem; color: var(--azul-deusto);">${libro.titulo}</strong><br>
+                                <span style="color: #666; font-size: 0.9rem;">ISBN: ${libro.isbn}</span><br>
+                                <em>Autor: ${libro.autor}</em><br>
+                                Estado: ${estado}
+                            </div>
+                            <div>
+                                ${btnPrestar}
+                            </div>
+                        </div>`;
+                });
+            } catch (e) { 
+                console.error("Error al cargar catálogo:", e); 
+                document.getElementById('lista-libros').innerHTML = '<p style="color: red;">Error al conectar con el servidor.</p>';
+            }
+        }
+
+        async function prestarLibro(id) {
+            const token = localStorage.getItem('token');
+            if(!token) { 
+                alert("Debes iniciar sesión primero para poder reservar un libro."); 
+                window.location.href = "login.html";
+                return; 
+            }
+            
+            try {
+                const response = await fetch(`/api/prestamos/prestar/${id}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': token }
+                });
+                
+                if(response.ok) {
+                    alert("¡Libro reservado con éxito! Puedes gestionarlo desde 'Mis Préstamos'.");
+                    cargarLibros(); // Recargamos para que el botón desaparezca y salga "Prestado"
+                } else if (response.status === 401 || response.status === 403) {
+                    alert("Tu sesión ha caducado. Vuelve a iniciar sesión.");
+                    window.location.href = "login.html";
+                } else {
+                    alert("Lo sentimos, este libro acaba de ser reservado por otra persona.");
+                }
+            } catch (e) {
+                console.error("Error en la reserva:", e);
+            }
+        }
+
+        window.addEventListener('load', () => setTimeout(cargarLibros, 300));
+    </script>
+</body>
+</html>
