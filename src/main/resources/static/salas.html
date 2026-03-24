@@ -165,17 +165,23 @@
 		async function confirmarReserva() {
 		    const token = localStorage.getItem('token');
 		    const fecha = document.getElementById('reserva-fecha').value;
-		    const hora = document.getElementById('reserva-hora').value;
+		    const hora = document.getElementById('reserva-hora').value; // ej: "08:30"
 
-		    if(!fecha) { alert("Selecciona fecha"); return; }
+		    if(!fecha) { alert("Selecciona una fecha"); return; }
+		    
+		    // Verificamos que el usuario tiene un ID válido
+		    if(!usuarioActual || !usuarioActual.id) { 
+		        alert("Error crítico: No se ha podido identificar tu usuario. Vuelve a iniciar sesión."); 
+		        return; 
+		    }
 
+		    // Calculamos el inicio y fin de manera exacta, evitando problemas de zona horaria (UTC)
 		    const inicio = `${fecha}T${hora}:00`;
-		    const dFin = new Date(`${fecha}T${hora}:00`);
-		    dFin.setHours(dFin.getHours() + 3);
-		    const fin = dFin.toISOString().split('.')[0];
+		    const horaFinNum = parseInt(hora.split(':')[0]) + 3; // Le sumamos 3 horas
+		    const fin = `${fecha}T${String(horaFinNum).padStart(2, '0')}:30:00`;
 
 		    const reserva = {
-		        usuario: { id: usuarioActual.id }, // Punto 3: Guardar con el usuario actual
+		        usuario: { id: usuarioActual.id },
 		        aula: { id: salaActual.id },
 		        fechaHoraInicio: inicio,
 		        fechaHoraFin: fin
@@ -189,12 +195,17 @@
 		        });
 
 		        if (response.ok) {
-		            alert("Reserva guardada en la base de datos.");
-		            window.location.href = "index.html"; // Punto 2: Redirigir al inicio
+		            alert("¡Reserva guardada en la base de datos con éxito!");
+		            window.location.href = "index.html"; // O renderVisualCalendar() si prefieres quedarte
 		        } else {
-		            alert("Error: La sala ya está ocupada.");
+		            // Ahora leemos el error REAL que nos manda Spring Boot
+		            const textoError = await response.text();
+		            alert("Atención: " + (textoError || "Error interno del servidor. Revisa la consola de Spring Boot."));
 		        }
-		    } catch (e) { console.error(e); }
+		    } catch (e) { 
+		        console.error(e); 
+		        alert("Error de conexión con el servidor.");
+		    }
 		}
 		
 		async function cargarMisReservas() {
