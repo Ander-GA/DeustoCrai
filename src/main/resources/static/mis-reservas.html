@@ -59,8 +59,9 @@
 						     let f = r.fechaHoraInicio;
 						     if (!f) return ''; // Si la reserva no tiene fecha (corrupta), la ignora
 						                    
-						     let dateObj = Array.isArray(f) ? new Date(f[0], f[1]-1, f[2], f[3], f[4]||0) : new Date(f);
-						                    
+							 let dateObj = Array.isArray(f) 
+							     ? new Date(f[0], f[1]-1, f[2], f[3], f[4]||0) 
+							     : new Date(f);						                    
 						     // Protegemos por si se guardó una reserva sin aula en las pruebas
 						     let nombreSala = r.aula ? r.aula.nombre : "Sala eliminada/desconocida";
 						                    
@@ -78,8 +79,9 @@
 		        }
 		
 		
-        // Esperar a que cargue el header inyectado por auth.js
-        window.onload = () => setTimeout(cargarReservas, 500);
+				document.addEventListener('DOMContentLoaded', () => {
+				    setTimeout(cargarReservas, 500);
+				});
     </script>
 </body>
 </html>

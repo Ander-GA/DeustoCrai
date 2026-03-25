@@ -245,19 +245,20 @@
 		            const dayNum = lunes.getDay() || 7;
 		            lunes.setDate(lunes.getDate() - dayNum + 1);
 
-					
-					let reservas = [];
-					  try {
-					                // Recuperamos el token de tu sesión
-					       const token = localStorage.getItem('token'); 
-					                
-					                // Lo enviamos en los headers de la petición para tener permiso
-					       const resp = await fetch(`/api/reservas/aula/${salaActual.id}`, {
-					         headers: { 'Authorization': token }
-					     });
-					                
-					     if(resp.ok) reservas = await resp.json();
-					  } catch(e) { console.error(e); }
+		            let reservas = [];
+		            try {
+		                const token = localStorage.getItem('token');
+		                // MAGIA ANTI-CACHÉ: Añadimos un timestamp al final de la URL
+		                const urlBlindada = `/api/reservas/aula/${salaActual.id}?t=${new Date().getTime()}`;
+		                const resp = await fetch(urlBlindada, {
+		                    headers: { 
+		                        'Authorization': token,
+		                        'Cache-Control': 'no-cache' // Forzamos a no usar caché
+		                    }
+		                });
+		                
+		                if(resp.ok) reservas = await resp.json();
+		            } catch(e) { console.error("Error cargando reservas:", e); }
 
 		            for(let i=0; i<7; i++) {
 		                let d = new Date(lunes); d.setDate(lunes.getDate() + i);
@@ -269,34 +270,18 @@
 		                for(let i=0; i<7; i++) {
 		                    let d = new Date(lunes); d.setDate(lunes.getDate() + i);
 		                    
-		                    // Aseguramos la fecha local sin desfase UTC
-		                    let year = d.getFullYear();
-		                    let month = String(d.getMonth() + 1).padStart(2, '0');
-		                    let day = String(d.getDate()).padStart(2, '0');
-		                    let fStr = `${year}-${month}-${day}`;
+		                    // Comprobación INFALIBLE con objetos Date puros
+							let ocupado = reservas.some(r => {
+							    let f = r.fechaHoraInicio;
+							    let dB = Array.isArray(f) ? new Date(f[0], f[1]-1, f[2], f[3], f[4]||0) : new Date(f);
+							    
+							    return dB.getFullYear() === d.getFullYear() &&
+							           dB.getMonth() === d.getMonth() &&
+							           dB.getDate() === d.getDate() &&
+							           dB.getHours() === horaCelda &&
+							           dB.getMinutes() === minCelda;
+							});
 		                    
-		                    // Comprobación de ocupación a prueba de listas de Java
-		                    let ocupado = reservas.some(r => {
-		                        let inicio = r.fechaHoraInicio;
-		                        let fechaTexto = "";
-		                        
-		                        // Si Java manda una lista de números [2026, 3, 25, 8, 30]
-		                        if (Array.isArray(inicio)) {
-		                            let y = inicio[0];
-		                            let m = String(inicio[1]).padStart(2, '0'); // Mes
-		                            let d = String(inicio[2]).padStart(2, '0'); // Día
-		                            let hr = String(inicio[3]).padStart(2, '0'); // Hora
-		                            let mn = String(inicio[4] || 0).padStart(2, '0'); // Minuto
-		                            fechaTexto = `${y}-${m}-${d}T${hr}:${mn}`;
-		                        } else {
-		                            // Si Java manda el texto correctamente
-		                            fechaTexto = inicio; 
-		                        }
-		                        
-		                        return fechaTexto.startsWith(fStr) && fechaTexto.includes(h);
-		                    });
-		                    
-		                    // Dibuja la celda ROJA o VERDE
 		                    grid.innerHTML += `<div class="time-slot">${ocupado ? '<div class="ocupado">OCUPADO</div>' : '<div class="libre">LIBRE</div>'}</div>`;
 		                }
 		            });
