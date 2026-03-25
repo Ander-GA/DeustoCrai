@@ -39,4 +39,8 @@ public class LibroController {
     public List<Libro> listarLibros() {
         return libroService.listarLibros();
     }
+    @GetMapping("/buscar")
+    public List<Libro> buscarLibros(@RequestParam String q) {
+        return libroService.buscarLibros(q); // Usamos el servicio en lugar del repositorio
+    }
 }

@@ -32,4 +32,7 @@ public class LibroService {
     public List<Libro> listarLibros() {
         return libroRepository.findAll();
     }
+    public List<Libro> buscarLibros(String query) {
+        return libroRepository.findByTituloContainingIgnoreCase(query);
+    }
 }

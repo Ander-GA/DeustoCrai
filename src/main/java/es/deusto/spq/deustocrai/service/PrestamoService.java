@@ -21,7 +21,8 @@ public class PrestamoService {
     private LibroRepository libroRepository;
 
     public List<Prestamo> obtenerPrestamosPorUsuario(User usuario) {
-        return prestamoRepository.findByUsuario(usuario);
+
+        return prestamoRepository.findByUsuarioId(usuario.getId());
     }
 
     public Prestamo realizarPrestamo(User usuario, Long libroId) {
