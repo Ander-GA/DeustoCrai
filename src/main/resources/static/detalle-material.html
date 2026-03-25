@@ -39,14 +39,11 @@
             }
 
             try {
-                // Llamada a la API que diseñaste en la tarea #46
-                const response = await fetch(`/api/materiales`);
-                const materiales = await response.json();
-                
-                // Buscamos el material específico en la lista
-                const material = materiales.find(m => m.id == id);
+               
+                const response = await fetch(`/api/materiales/${id}`);
 
-                if (material) {
+                if (response.ok) {
+                    const material = await response.json();
                     const statusClass = material.disponible ? 'available' : 'unavailable';
                     const statusText = material.disponible ? 'Disponible' : 'No disponible';
 
@@ -60,13 +57,12 @@
                         </div>
                     `;
                 } else {
-                    document.getElementById('material-content').innerHTML = "<p>Material no encontrado.</p>";
+                    document.getElementById('material-content').innerHTML = "<p>Material no encontrado en la base de datos.</p>";
                 }
             } catch (error) {
                 console.error("Error al cargar detalle:", error);
                 document.getElementById('material-content').innerHTML = "<p>Error al conectar con el servidor.</p>";
             }
-        }
 
         // Ejecutar al cargar la página
         window.addEventListener('load', () => {

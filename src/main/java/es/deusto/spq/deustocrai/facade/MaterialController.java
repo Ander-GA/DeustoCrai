@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Optional; 
 
 @RestController
 @RequestMapping("/api/materiales")
@@ -24,5 +25,17 @@ public class MaterialController {
     @GetMapping
     public List<Material> listar() {
         return materialRepository.findAll();
+    }
+
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<Material> obtenerDetallesMaterial(@PathVariable("id") Long id) {
+        Optional<Material> material = materialRepository.findById(id);
+        
+        if (material.isPresent()) {
+            return ResponseEntity.ok(material.get()); 
+        } else {
+            return ResponseEntity.notFound().build(); 
+        }
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional; 
 
 @Service
 public class LibroService {
@@ -13,13 +14,11 @@ public class LibroService {
     @Autowired
     private LibroRepository libroRepository;
 
-    // Lógica para añadir un libro
     public Libro anadirLibro(Libro libro) {
         libro.setDisponible(true); 
         return libroRepository.save(libro);
     }
 
-    // Lógica para borrar un libro comprobando si existe
     public boolean borrarLibro(Long id) {
         if (libroRepository.existsById(id)) {
             libroRepository.deleteById(id);
@@ -28,11 +27,12 @@ public class LibroService {
         return false;
     }
 
-    // Lógica para listar todos los libros
     public List<Libro> listarLibros() {
         return libroRepository.findAll();
     }
-    public List<Libro> buscarLibros(String query) {
-        return libroRepository.findByTituloContainingIgnoreCase(query);
+
+    // --- NUEVA LÓGICA ---
+    public Optional<Libro> obtenerLibroPorId(Long id) {
+        return libroRepository.findById(id);
     }
 }

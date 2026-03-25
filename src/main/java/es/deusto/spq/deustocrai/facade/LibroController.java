@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional; 
 
 @RestController
 @RequestMapping("/api/libros")
@@ -16,31 +17,15 @@ public class LibroController {
     @Autowired
     private LibroService libroService;
 
-    @PostMapping
-    public ResponseEntity<Libro> anadirLibro(@RequestBody Libro libro) {
-        // Delegamos la creación al servicio
-        Libro nuevo = libroService.anadirLibro(libro);
-        return new ResponseEntity<>(nuevo, HttpStatus.CREATED);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> borrarLibro(@PathVariable Long id) {
-        // El servicio nos dice si lo ha podido borrar o no
-        boolean borrado = libroService.borrarLibro(id);
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<Libro> obtenerDetallesLibro(@PathVariable("id") Long id) {
+        Optional<Libro> libro = libroService.obtenerLibroPorId(id);
         
-        if (borrado) {
-            return ResponseEntity.noContent().build(); 
+        if (libro.isPresent()) {
+            return ResponseEntity.ok(libro.get());
         } else {
-            return ResponseEntity.notFound().build(); 
+            return ResponseEntity.notFound().build();
         }
-    }
-
-    @GetMapping
-    public List<Libro> listarLibros() {
-        return libroService.listarLibros();
-    }
-    @GetMapping("/buscar")
-    public List<Libro> buscarLibros(@RequestParam String q) {
-        return libroService.buscarLibros(q); // Usamos el servicio en lugar del repositorio
     }
 }
