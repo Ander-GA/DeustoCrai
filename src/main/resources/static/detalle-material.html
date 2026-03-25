@@ -19,11 +19,13 @@
     <main class="detail-container">
         <h2>Detalle del Recurso</h2>
         <hr><br>
+        
         <div id="material-content">
             <p>Cargando información...</p>
         </div>
+        
         <br>
-        <a href="index.html" class="btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Volver al catálogo</a>
+        <a href="material.html" class="btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Volver al catálogo</a>
     </main>
 
     <script src="js/auth.js"></script>
@@ -34,12 +36,12 @@
             const id = urlParams.get('id');
 
             if (!id) {
-                document.getElementById('material-content').innerHTML = "<p>Error: No se proporcionó un ID de material.</p>";
+                document.getElementById('material-content').innerHTML = "<p style='color:red;'>Error: No se proporcionó un ID de material en la URL.</p>";
                 return;
             }
 
             try {
-               
+                // Llamada correcta al endpoint pasándole el ID directamente
                 const response = await fetch(`/api/materiales/${id}`);
 
                 if (response.ok) {
@@ -57,12 +59,13 @@
                         </div>
                     `;
                 } else {
-                    document.getElementById('material-content').innerHTML = "<p>Material no encontrado en la base de datos.</p>";
+                    document.getElementById('material-content').innerHTML = "<p style='color:red;'>Material no encontrado en la base de datos.</p>";
                 }
             } catch (error) {
                 console.error("Error al cargar detalle:", error);
-                document.getElementById('material-content').innerHTML = "<p>Error al conectar con el servidor.</p>";
+                document.getElementById('material-content').innerHTML = "<p style='color:red;'>Error al conectar con el servidor.</p>";
             }
+        }
 
         // Ejecutar al cargar la página
         window.addEventListener('load', () => {
