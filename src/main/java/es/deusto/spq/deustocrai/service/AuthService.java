@@ -8,6 +8,7 @@ package es.deusto.spq.deustocrai.service;
 import org.springframework.stereotype.Service;
 
 import es.deusto.spq.deustocrai.dao.UserRepository;
+import es.deusto.spq.deustocrai.dto.CreateUserDTO;
 import es.deusto.spq.deustocrai.entity.User;
 
 import java.util.HashMap;
@@ -51,13 +52,21 @@ public class AuthService {
             return Optional.empty();
         }
     }
-    public Optional<User> register(User newUser) {
+    public Optional<User> register(CreateUserDTO userDTO) {
         // 1. Verificar si el email ya está registrado en la BD
-        if (userRepository.findByEmail(newUser.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
             return Optional.empty();
         }
         
-        // 2. Guardar el nuevo usuario
+        // 2. Mapear el DTO a la entidad User
+        User newUser = new User();
+        newUser.setNombre(userDTO.getNombre());
+        newUser.setApellidos(userDTO.getApellidos());
+        newUser.setPassword(userDTO.getPassword());
+        newUser.setEmail(userDTO.getEmail());
+        newUser.setRole(User.Role.valueOf(userDTO.getRole().name()));
+
+        // 3. Guardar el nuevo usuario
         return Optional.of(userRepository.save(newUser));
     }
     // Method to get the Empleado based on the token
