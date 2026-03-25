@@ -259,8 +259,11 @@
             franjas.forEach(h => {
                 grid.innerHTML += `<div class="time-slot" style="font-weight:bold; background:#f9f9f9;">${h}</div>`;
                 for(let i=0; i<7; i++) {
-                    let d = new Date(lunes); d.setDate(lunes.getDate() + i);
-                    let fStr = d.toISOString().split('T')[0];
+					let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+					let year = d.getFullYear();
+					let month = String(d.getMonth() + 1).padStart(2, '0');
+					let day = String(d.getDate()).padStart(2, '0');
+					let fStr = `${year}-${month}-${day}`;
                     // Compara con las reservas reales para marcar ocupación
                     let ocupado = reservas.some(r => r.fechaHoraInicio.startsWith(fStr) && r.fechaHoraInicio.includes(h));
                     

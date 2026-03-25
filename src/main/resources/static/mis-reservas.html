@@ -25,8 +25,14 @@
 
             try {
                 // 1. Obtener datos del usuario logueado para tener su ID
-                const userResp = await fetch('/auth/me', { headers: { 'Authorization': token } });
-                const user = await userResp.json();
+				const userResp = await fetch('/auth/me', { headers: { 'Authorization': token } });
+				if (!userResp.ok) {
+				    // Si la sesión caducó o el servidor se reinició, borramos el token falso y mandamos al login
+				    localStorage.removeItem('token');
+				    window.location.href = "login.html";
+				    return;
+				}
+				const user = await userResp.json();
 
                 // 2. Llamar al endpoint de AulaController que filtra por usuario
                 const response = await fetch(`/api/salas/usuario/${user.id}`);

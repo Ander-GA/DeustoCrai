@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,17 +34,21 @@ public class AulaController {
 
     @PostMapping("/reservar")
     public ResponseEntity<?> reservarSala(@RequestBody Reserva reserva) {
-        return reservaService.realizarReserva(reserva)
-            .<ResponseEntity<?>>map(nueva -> ResponseEntity.ok(nueva)) 
-            .orElseGet(() -> ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("La sala ya está reservada en esta franja horaria."));
+        Optional<Reserva> nuevaReserva = reservaService.realizarReserva(reserva);
+        
+        if (nuevaReserva.isPresent()) {
+            return ResponseEntity.ok(nuevaReserva.get());
+        } else {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("La sala ya está reservada en esta franja horaria.");
+        }
     }
 
     // Endpoint para obtener las reservas del usuario logueado (Punto 1)
     @GetMapping("/usuario/{usuarioId}")
     public List<Reserva> listarReservasUsuario(@PathVariable Long usuarioId) {
         return reservaRepository.findAll().stream()
-                .filter(r -> r.getUsuario().getId().equals(usuarioId))
+                .filter(r -> r.getUsuario() != null && r.getUsuario().getId().equals(usuarioId))
                 .collect(Collectors.toList());
     }
 

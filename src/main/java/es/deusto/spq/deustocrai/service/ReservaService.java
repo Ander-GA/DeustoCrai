@@ -20,20 +20,18 @@ public class ReservaService {
     }
 
     public Optional<Reserva> realizarReserva(Reserva nueva) {
-        // 1. Obtener reservas existentes para esa aula específica
-        List<Reserva> existentes = reservaRepository.findByAulaId(nueva.getAula().getId());
+        Long aulaId = nueva.getAula().getId(); 
+        List<Reserva> existentes = reservaRepository.findByAulaId(aulaId);
         
-        // 2. Lógica para evitar solapamientos
         boolean conflicto = existentes.stream().anyMatch(r -> 
             nueva.getFechaHoraInicio().isBefore(r.getFechaHoraFin()) && 
             r.getFechaHoraInicio().isBefore(nueva.getFechaHoraFin())
         );
 
         if (conflicto) {
-            return Optional.empty(); // devuelve vacío si la sala está ocupada
+            return Optional.empty();
         }
 
-        // 3.bd
         return Optional.of(reservaRepository.save(nueva));
     }
 }
