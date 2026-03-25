@@ -78,8 +78,9 @@
 		        }
 		
 		
-        // Esperar a que cargue el header inyectado por auth.js
-        window.onload = () => setTimeout(cargarReservas, 500);
+				document.addEventListener('DOMContentLoaded', () => {
+				    setTimeout(cargarReservas, 500);
+				});
     </script>
 </body>
 </html>
