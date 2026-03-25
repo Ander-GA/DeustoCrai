@@ -63,8 +63,8 @@
         .calendar-grid { flex: 1; display: grid; grid-template-columns: 80px repeat(7, 1fr); border: 1px solid #ddd; overflow-y: auto; }
         .time-slot { height: 50px; border: 0.5px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.8em; }
         .day-header { text-align: center; padding: 10px; font-weight: bold; border-bottom: 2px solid var(--azul-deusto); background: #f9f9f9; }
-        .ocupado { background-color: #d9534f; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    </style>
+		.ocupado { background-color: #d9534f; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+		.libre { background-color: #5cb85c; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }    </style>
 </head>
 <body>
 
@@ -196,8 +196,8 @@
 
 		        if (response.ok) {
 		            alert("¡Reserva guardada en la base de datos con éxito!");
-		            window.location.href = "index.html"; // O renderVisualCalendar() si prefieres quedarte
-		        } else {
+					window.location.href = "index.html";
+					} else {
 		            // Ahora leemos el error REAL que nos manda Spring Boot
 		            const textoError = await response.text();
 		            alert("Atención: " + (textoError || "Error interno del servidor. Revisa la consola de Spring Boot."));
@@ -235,42 +235,72 @@
             }
         }
 
-        async function renderVisualCalendar() {
-            const grid = document.getElementById('calendar-grid');
-            const label = document.getElementById('mes-anio-label');
-            label.innerText = fechaReferencia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
-            
-            grid.innerHTML = '<div class="time-slot" style="background:#eee;"></div>';
-            const lunes = new Date(fechaReferencia);
-            const dayNum = lunes.getDay() || 7;
-            lunes.setDate(lunes.getDate() - dayNum + 1);
+		async function renderVisualCalendar() {
+		            const grid = document.getElementById('calendar-grid');
+		            const label = document.getElementById('mes-anio-label');
+		            label.innerText = fechaReferencia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+		            
+		            grid.innerHTML = '<div class="time-slot" style="background:#eee;"></div>';
+		            const lunes = new Date(fechaReferencia);
+		            const dayNum = lunes.getDay() || 7;
+		            lunes.setDate(lunes.getDate() - dayNum + 1);
 
-            let reservas = [];
-            try {
-                const resp = await fetch(`/api/salas/${salaActual.id}/reservas`); // Obtiene reservas del backend
-                if(resp.ok) reservas = await resp.json();
-            } catch(e) { console.error(e); }
+					
+					let reservas = [];
+					  try {
+					                // Recuperamos el token de tu sesión
+					       const token = localStorage.getItem('token'); 
+					                
+					                // Lo enviamos en los headers de la petición para tener permiso
+					       const resp = await fetch(`/api/reservas/aula/${salaActual.id}`, {
+					         headers: { 'Authorization': token }
+					     });
+					                
+					     if(resp.ok) reservas = await resp.json();
+					  } catch(e) { console.error(e); }
 
-            for(let i=0; i<7; i++) {
-                let d = new Date(lunes); d.setDate(lunes.getDate() + i);
-                grid.innerHTML += `<div class="day-header">${days[i]}<br><span style="font-size:0.8em;">${d.getDate()}/${d.getMonth()+1}</span></div>`;
-            }
+		            for(let i=0; i<7; i++) {
+		                let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+		                grid.innerHTML += `<div class="day-header">${days[i]}<br><span style="font-size:0.8em;">${d.getDate()}/${d.getMonth()+1}</span></div>`;
+		            }
 
-            franjas.forEach(h => {
-                grid.innerHTML += `<div class="time-slot" style="font-weight:bold; background:#f9f9f9;">${h}</div>`;
-                for(let i=0; i<7; i++) {
-					let d = new Date(lunes); d.setDate(lunes.getDate() + i);
-					let year = d.getFullYear();
-					let month = String(d.getMonth() + 1).padStart(2, '0');
-					let day = String(d.getDate()).padStart(2, '0');
-					let fStr = `${year}-${month}-${day}`;
-                    // Compara con las reservas reales para marcar ocupación
-                    let ocupado = reservas.some(r => r.fechaHoraInicio.startsWith(fStr) && r.fechaHoraInicio.includes(h));
-                    
-                    grid.innerHTML += `<div class="time-slot">${ocupado ? '<div class="ocupado">OCUPADO</div>' : ''}</div>`;
-                }
-            });
-        }
+		            franjas.forEach(h => {
+		                grid.innerHTML += `<div class="time-slot" style="font-weight:bold; background:#f9f9f9;">${h}</div>`;
+		                for(let i=0; i<7; i++) {
+		                    let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+		                    
+		                    // Aseguramos la fecha local sin desfase UTC
+		                    let year = d.getFullYear();
+		                    let month = String(d.getMonth() + 1).padStart(2, '0');
+		                    let day = String(d.getDate()).padStart(2, '0');
+		                    let fStr = `${year}-${month}-${day}`;
+		                    
+		                    // Comprobación de ocupación a prueba de listas de Java
+		                    let ocupado = reservas.some(r => {
+		                        let inicio = r.fechaHoraInicio;
+		                        let fechaTexto = "";
+		                        
+		                        // Si Java manda una lista de números [2026, 3, 25, 8, 30]
+		                        if (Array.isArray(inicio)) {
+		                            let y = inicio[0];
+		                            let m = String(inicio[1]).padStart(2, '0'); // Mes
+		                            let d = String(inicio[2]).padStart(2, '0'); // Día
+		                            let hr = String(inicio[3]).padStart(2, '0'); // Hora
+		                            let mn = String(inicio[4] || 0).padStart(2, '0'); // Minuto
+		                            fechaTexto = `${y}-${m}-${d}T${hr}:${mn}`;
+		                        } else {
+		                            // Si Java manda el texto correctamente
+		                            fechaTexto = inicio; 
+		                        }
+		                        
+		                        return fechaTexto.startsWith(fStr) && fechaTexto.includes(h);
+		                    });
+		                    
+		                    // Dibuja la celda ROJA o VERDE
+		                    grid.innerHTML += `<div class="time-slot">${ocupado ? '<div class="ocupado">OCUPADO</div>' : '<div class="libre">LIBRE</div>'}</div>`;
+		                }
+		            });
+		        }
 
         window.onload = init;
     </script>
