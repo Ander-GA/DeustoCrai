@@ -8,10 +8,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.dao.AulaRepository;
-import es.deusto.spq.deustocrai.entity.User;
+import es.deusto.spq.deustocrai.dao.MaterialRepository;
+import es.deusto.spq.deustocrai.dao.UserRepository; // Nuevo import
 import es.deusto.spq.deustocrai.entity.Aula;
+import es.deusto.spq.deustocrai.entity.Material;
+import es.deusto.spq.deustocrai.entity.User; // Nuevo import
 
 @Configuration
 public class DataInitializer {
@@ -21,15 +23,16 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initData(
             UserRepository userRepository,
-            AulaRepository aulaRepository) {
+            AulaRepository aulaRepository,
+            MaterialRepository materialRepository) { // Inyectamos el repositorio de materiales
 
         return args -> {
             // 1. Limpiar datos previos para evitar duplicados al reiniciar
             userRepository.deleteAll();
             aulaRepository.deleteAll();
+            materialRepository.deleteAll(); // Limpiamos materiales
 
-            // 2. Crear Usuarios (los mismos de tu proyecto anterior)
-            // Nota: He usado el constructor y setters basándome en tu entidad User
+            // 2. Crear Usuarios
             User ander = new User();
             ander.setNombre("Ander");
             ander.setApellidos("Gonzalez Alonso");
@@ -90,6 +93,13 @@ public class DataInitializer {
 
             aulaRepository.saveAll(List.of(sala1, sala2, sala3));
             logger.info("Salas del CRAI guardadas!");
+
+            // 4. Crear Materiales iniciales (Sugerencia de tu compañero)
+            Material portatil = new Material("Portátil Dell Latitude", "SN-DELL-001", "Portatil");
+            Material camara = new Material("Cámara Canon EOS", "SN-CAN-500", "Camara");
+            
+            materialRepository.saveAll(List.of(portatil, camara));
+            logger.info("Materiales del CRAI guardados!");
             
             logger.info(">> Inicialización de datos completada con éxito.");
         };
