@@ -9,11 +9,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import es.deusto.spq.deustocrai.dao.AulaRepository;
+<<<<<<< HEAD
 import es.deusto.spq.deustocrai.dao.MaterialRepository;
 import es.deusto.spq.deustocrai.dao.UserRepository; // Nuevo import
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Material;
 import es.deusto.spq.deustocrai.entity.User; // Nuevo import
+=======
+import es.deusto.spq.deustocrai.dao.LibroRepository;
+import es.deusto.spq.deustocrai.dao.PrestamoRepository;
+import es.deusto.spq.deustocrai.dao.ReservaRepository;
+import es.deusto.spq.deustocrai.entity.User;
+import es.deusto.spq.deustocrai.entity.Aula;
+import es.deusto.spq.deustocrai.entity.Libro;
+>>>>>>> 90aa5399cc5cada12b38e596acfbba75a6dcf85c
 
 @Configuration
 public class DataInitializer {
@@ -22,13 +31,23 @@ public class DataInitializer {
 
     @Bean
     CommandLineRunner initData(
+    		
             UserRepository userRepository,
             AulaRepository aulaRepository,
+<<<<<<< HEAD
             MaterialRepository materialRepository) { // Inyectamos el repositorio de materiales
+=======
+            LibroRepository libroRepository,
+            ReservaRepository reservaRepository,
+            PrestamoRepository prestamoRepository) {
+>>>>>>> 90aa5399cc5cada12b38e596acfbba75a6dcf85c
 
         return args -> {
             // 1. Limpiar datos previos para evitar duplicados al reiniciar
-            userRepository.deleteAll();
+            prestamoRepository.deleteAll();
+            reservaRepository.deleteAll();
+        	userRepository.deleteAll();
+            libroRepository.deleteAll();
             aulaRepository.deleteAll();
             materialRepository.deleteAll(); // Limpiamos materiales
 
@@ -100,6 +119,16 @@ public class DataInitializer {
             
             materialRepository.saveAll(List.of(portatil, camara));
             logger.info("Materiales del CRAI guardados!");
+            
+            logger.info(">> Inicialización de datos completada con éxito.");
+            
+            //Crear Libros para el catálogo
+            Libro libro1 = new Libro("Clean Code: A Handbook of Agile Software Craftsmanship", "978-0132350884", "Robert C. Martin");
+            Libro libro2 = new Libro("Design Patterns: Elements of Reusable Object-Oriented Software", "978-0201633610", "Erich Gamma");
+            Libro libro3 = new Libro("El Señor de los Anillos: La Comunidad del Anillo", "978-8445071409", "J.R.R. Tolkien");
+            
+            libroRepository.saveAll(List.of(libro1, libro2, libro3));
+            logger.info("Libros del catálogo guardados!");
             
             logger.info(">> Inicialización de datos completada con éxito.");
         };

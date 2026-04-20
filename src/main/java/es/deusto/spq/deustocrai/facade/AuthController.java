@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import es.deusto.spq.deustocrai.dto.CreateUserDTO;
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
 import es.deusto.spq.deustocrai.entity.User;
 import es.deusto.spq.deustocrai.service.AuthService;
@@ -75,18 +76,18 @@ public class AuthController {
         }        
     }
     @Operation(
-    summary = "Registrar un nuevo usuario",
-    description = "Crea un nuevo usuario en el sistema con el rol especificado (STUDENT o LIBRARIAN)."
-	)
+    	    summary = "Registrar un nuevo usuario",
+    	    description = "Crea un nuevo usuario en el sistema con el rol especificado (ESTUDIANTE, BIBLIOTECARIO o ADMIN)."
+    	)
 	@PostMapping("/register")
-	public ResponseEntity<String> register(@RequestBody User user) {
-	    // Llamada al servicio para procesar el registro
-	    Optional<User> registeredUser = authService.register(user);
+	public ResponseEntity<String> register(@RequestBody CreateUserDTO userDTO) { // Cambio de User a CreateUserDTO
+	    // Llamada al servicio pasando el DTO
+	    Optional<User> registeredUser = authService.register(userDTO);
 
 	    if (registeredUser.isPresent()) {
-	        return new ResponseEntity<>("Usuario registrado con éxito", HttpStatus.CREATED);
+	        return new ResponseEntity<>("Usuario registrado con éxito", HttpStatus.CREATED); //
 	    } else {
-	        return new ResponseEntity<>("El email ya está en uso", HttpStatus.BAD_REQUEST);
+	        return new ResponseEntity<>("El email ya está en uso", HttpStatus.BAD_REQUEST); //
 	    }
 	}
     

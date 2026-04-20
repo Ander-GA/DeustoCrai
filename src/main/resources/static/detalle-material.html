@@ -19,11 +19,13 @@
     <main class="detail-container">
         <h2>Detalle del Recurso</h2>
         <hr><br>
+        
         <div id="material-content">
             <p>Cargando información...</p>
         </div>
+        
         <br>
-        <a href="index.html" class="btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Volver al catálogo</a>
+        <a href="material.html" class="btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Volver al catálogo</a>
     </main>
 
     <script src="js/auth.js"></script>
@@ -34,19 +36,16 @@
             const id = urlParams.get('id');
 
             if (!id) {
-                document.getElementById('material-content').innerHTML = "<p>Error: No se proporcionó un ID de material.</p>";
+                document.getElementById('material-content').innerHTML = "<p style='color:red;'>Error: No se proporcionó un ID de material en la URL.</p>";
                 return;
             }
 
             try {
-                // Llamada a la API que diseñaste en la tarea #46
-                const response = await fetch(`/api/materiales`);
-                const materiales = await response.json();
-                
-                // Buscamos el material específico en la lista
-                const material = materiales.find(m => m.id == id);
+                // Llamada correcta al endpoint pasándole el ID directamente
+                const response = await fetch(`/api/materiales/${id}`);
 
-                if (material) {
+                if (response.ok) {
+                    const material = await response.json();
                     const statusClass = material.disponible ? 'available' : 'unavailable';
                     const statusText = material.disponible ? 'Disponible' : 'No disponible';
 
@@ -60,11 +59,11 @@
                         </div>
                     `;
                 } else {
-                    document.getElementById('material-content').innerHTML = "<p>Material no encontrado.</p>";
+                    document.getElementById('material-content').innerHTML = "<p style='color:red;'>Material no encontrado en la base de datos.</p>";
                 }
             } catch (error) {
                 console.error("Error al cargar detalle:", error);
-                document.getElementById('material-content').innerHTML = "<p>Error al conectar con el servidor.</p>";
+                document.getElementById('material-content').innerHTML = "<p style='color:red;'>Error al conectar con el servidor.</p>";
             }
         }
 
