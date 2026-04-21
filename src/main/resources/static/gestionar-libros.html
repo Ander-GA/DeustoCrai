@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario de Libros - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .tabla-inventario { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .tabla-inventario th, .tabla-inventario td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        .tabla-inventario th { background-color: #004b87; color: white; }
+        .btn-volver { display: inline-block; margin-bottom: 15px; text-decoration: none; color: #004b87; font-weight: bold;}
+        .form-anadir { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px; }
+        .form-anadir input { padding: 8px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-borrar { background-color: #d9534f; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .badge-disponible { background: #5cb85c; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; }
+        .badge-prestado { background: #d9534f; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="container">
+        <a href="panel-bibliotecario.html" class="btn-volver">← Volver al Panel</a>
+        <h2>Inventario de Libros</h2>
+        
+        <div class="form-anadir">
+            <h3>Añadir Nuevo Libro</h3>
+            <form id="form-nuevo-libro">
+                <input type="text" id="input-titulo" placeholder="Título del libro" required>
+                <input type="text" id="input-autor" placeholder="Autor" required>
+                <input type="text" id="input-isbn" placeholder="ISBN (ej: 978-X...)" required>
+                <button type="submit" class="btn-primary" style="padding: 8px 16px;">Añadir</button>
+            </form>
+        </div>
+        
+        <table class="tabla-inventario">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>ISBN</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-libros">
+                <tr><td colspan="6">Cargando inventario...</td></tr>
+            </tbody>
+        </table>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/gestionar-libros.js"></script>
+</body>
+</html>
