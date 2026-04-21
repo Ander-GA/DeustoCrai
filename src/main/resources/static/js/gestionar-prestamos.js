@@ -49,29 +49,30 @@ function pintarTabla(prestamos) {
     }
 
     prestamos.forEach(p => {
-		prestamos.forEach(p => {
-        // --- NUEVA LÓGICA ---
+        
+        // --- NUEVA LÓGICA DE HISTÓRICO ---
         // Si p.recurso no es null (el libro existe), leemos el objeto real. 
         // Si es null (fue borrado), usamos el histórico.
         let nombreRecurso = "Desconocido";
         if (p.recurso) {
             nombreRecurso = p.recurso.titulo ? p.recurso.titulo : p.recurso.nombre;
         } else {
-        // Determinar qué recurso es (Libro o Material) y sacar su nombre/título
-        const nombreRecurso = p.recurso.titulo ? p.recurso.titulo : p.recurso.nombre;
-		nombreRecurso = p.nombreRecursoHistorico + " (Eliminado del catálogo)";
+            nombreRecurso = p.nombreRecursoHistorico + " (Eliminado)";
         }
-        // Colores y botones según el estado
+        
         let claseEstado = '';
         let botonesAccion = '';
 
-        if (p.estado === 'PENDIENTE_ENTREGA') {
+        // Por seguridad, aseguramos que el estado existe (por si había datos antiguos en tu base de datos)
+        const estadoActual = p.estado || 'PENDIENTE_ENTREGA';
+
+        if (estadoActual === 'PENDIENTE_ENTREGA') {
             claseEstado = 'estado-pendiente';
             botonesAccion = `<button class="btn-accion btn-entregar" onclick="cambiarEstado(${p.id}, 'ENTREGADO')">Dar al Estudiante</button>`;
-        } else if (p.estado === 'ENTREGADO') {
+        } else if (estadoActual === 'ENTREGADO') {
             claseEstado = 'estado-entregado';
             botonesAccion = `<button class="btn-accion btn-devolver" onclick="cambiarEstado(${p.id}, 'DEVUELTO')">Marcar Devuelto</button>`;
-        } else if (p.estado === 'DEVUELTO') {
+        } else if (estadoActual === 'DEVUELTO') {
             claseEstado = 'estado-devuelto';
             botonesAccion = `<em>Finalizado</em>`;
         }
@@ -81,8 +82,8 @@ function pintarTabla(prestamos) {
             <td>${p.usuario.email}</td>
             <td>${nombreRecurso}</td>
             <td>${p.fechaPrestamo}</td>
-			<td>${p.fechaDevolucionPrevista}</td>
-            <td class="${claseEstado}">${p.estado.replace('_', ' ')}</td>
+            <td>${p.fechaDevolucionPrevista}</td>
+            <td class="${claseEstado}">${estadoActual.replace('_', ' ')}</td>
             <td>${botonesAccion}</td>
         `;
         tbody.appendChild(tr);
@@ -103,7 +104,7 @@ async function cambiarEstado(prestamoId, nuevoEstado) {
         });
 
         if (response.ok) {
-            // Si se actualizó bien, volvems a cargar la tabla para ver los cambios
+            // Si se actualizó bien, volvemos a cargar la tabla para ver los cambios
             cargarPrestamos();
         } else {
             alert("Hubo un error al actualizar el estado.");

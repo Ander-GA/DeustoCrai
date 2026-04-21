@@ -24,23 +24,30 @@ public class LibroService {
         return libroRepository.save(libro);
     }
 
-    public boolean borrarLibro(Long id) {
+    public int borrarLibro(Long id) {
+        // 1. Comprobamos si el libro existe
         if (!libroRepository.existsById(id)) {
-            return false;
+            return -1; // 404
         }
 
-        // 1. Buscamos todos los préstamos vinculados a este libro
         List<Prestamo> prestamos = prestamoRepository.findByRecursoId(id);
-        
-        // 2. Rompemos la relación (ponemos el recurso a null)
-        for (Prestamo prestamo : prestamos) {
-            prestamo.setRecurso(null);
-            prestamoRepository.save(prestamo); // Actualizamos el recibo
+
+        // 2. Comprobamos si CUALQUIER préstamo está activo usando un Stream
+        boolean estaPrestado = prestamos.stream().anyMatch(p -> 
+            p.getEstado() == Prestamo.EstadoPrestamo.PENDIENTE_ENTREGA || 
+            p.getEstado() == Prestamo.EstadoPrestamo.ENTREGADO
+        );
+
+        if (estaPrestado) {
+            return 0; // Conflicto (409)
         }
 
-        // 3. Borramos el libro físicamente (liberando el ISBN)
+        // 3. Cortamos la cuerda a todos los históricos y borramos el libro
+        prestamos.forEach(p -> p.setRecurso(null));
+        prestamoRepository.saveAll(prestamos); // Guardamos la lista entera de golpe, más eficiente
+
         libroRepository.deleteById(id);
-        return true;
+        return 1; // 204 OK
     }
 
     public List<Libro> listarLibros() {

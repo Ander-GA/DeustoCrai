@@ -54,12 +54,16 @@ public class LibroController {
 
   
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> borrarLibro(@PathVariable Long id) {
-        boolean borrado = libroService.borrarLibro(id);
-        if (borrado) {
-            return ResponseEntity.noContent().build();
+    public ResponseEntity<String> borrarLibro(@PathVariable("id") Long id) {
+        int resultado = libroService.borrarLibro(id);
+        
+        if (resultado == 1) {
+            return ResponseEntity.noContent().build(); // 204 OK (Se borró)
+        } else if (resultado == 0) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("No se puede borrar el libro porque actualmente se encuentra prestado."); 
         } else {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.notFound().build(); // 404 Not Found
         }
     }
 }
