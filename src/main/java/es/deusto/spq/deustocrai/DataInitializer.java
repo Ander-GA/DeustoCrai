@@ -9,20 +9,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import es.deusto.spq.deustocrai.dao.AulaRepository;
-<<<<<<< HEAD
 import es.deusto.spq.deustocrai.dao.MaterialRepository;
-import es.deusto.spq.deustocrai.dao.UserRepository; // Nuevo import
+import es.deusto.spq.deustocrai.dao.UserRepository; 
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Material;
-import es.deusto.spq.deustocrai.entity.User; // Nuevo import
-=======
+import es.deusto.spq.deustocrai.entity.User; 
 import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
-import es.deusto.spq.deustocrai.entity.User;
-import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Libro;
->>>>>>> 90aa5399cc5cada12b38e596acfbba75a6dcf85c
 
 @Configuration
 public class DataInitializer {
@@ -34,13 +29,10 @@ public class DataInitializer {
     		
             UserRepository userRepository,
             AulaRepository aulaRepository,
-<<<<<<< HEAD
-            MaterialRepository materialRepository) { // Inyectamos el repositorio de materiales
-=======
+            MaterialRepository materialRepository,
             LibroRepository libroRepository,
             ReservaRepository reservaRepository,
             PrestamoRepository prestamoRepository) {
->>>>>>> 90aa5399cc5cada12b38e596acfbba75a6dcf85c
 
         return args -> {
             // 1. Limpiar datos previos para evitar duplicados al reiniciar
