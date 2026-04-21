@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Bibliotecario - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .dashboard-card {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background-color: #e9ecef;
+        }
+        .dashboard-card h3 { color: #004b87; margin-bottom: 10px; }
+        .dashboard-card p { font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="container">
+        <h2>Panel de Control - Bibliotecario</h2>
+        <p>Selecciona la sección que deseas administrar:</p>
+
+        <div class="dashboard-grid">
+            <a href="gestionar-prestamos.html" class="dashboard-card">
+                <h3>Gestionar Préstamos</h3>
+                <p>Ver historial, entregar materiales y registrar devoluciones.</p>
+            </a>
+
+            <a href="#" class="dashboard-card" style="opacity: 0.6; cursor: not-allowed;">
+                <h3>Gestionar Reservas</h3>
+                <p>(Próximamente) Aprobar o rechazar reservas de salas y equipos.</p>
+            </a>
+
+            <a href="#" class="dashboard-card" style="opacity: 0.6; cursor: not-allowed;">
+                <h3>Inventario de Libros</h3>
+                <p>(Próximamente) Añadir, editar o eliminar libros del catálogo.</p>
+            </a>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Verificación rápida de seguridad para que no entre un estudiante
+        document.addEventListener('DOMContentLoaded', async function() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'login.html'; return; }
+            
+            try {
+                const response = await fetch('/auth/me', { headers: { 'Authorization': token } });
+                const user = await response.json();
+                if (user.role !== 'BIBLIOTECARIO' && user.role !== 'ADMIN') {
+                    alert("Acceso denegado.");
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>

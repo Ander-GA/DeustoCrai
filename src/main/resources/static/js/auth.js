@@ -24,7 +24,13 @@ async function checkAuth() {
             if(userMenu) userMenu.style.display = 'block';
             if(usernameDisplay) usernameDisplay.innerText = user.nombre || 'Usuario';
 
-            // Mostramos los botones de accesos directos en el index.html
+			//Mostrar panel de bibliotecario si tiene el rol adecuado
+            const linkBibliotecario = document.getElementById('link-bibliotecario');
+            if(linkBibliotecario && (user.role === 'BIBLIOTECARIO')) {
+                linkBibliotecario.style.display = 'block';
+            }
+			
+            //Mostramos los botones de accesos directos en el index.html
             const quickLinks = document.getElementById('quick-links');
             if(quickLinks) quickLinks.style.display = 'flex';
         } else {
