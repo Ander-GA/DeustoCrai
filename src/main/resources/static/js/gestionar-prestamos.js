@@ -49,9 +49,18 @@ function pintarTabla(prestamos) {
     }
 
     prestamos.forEach(p => {
+		prestamos.forEach(p => {
+        // --- NUEVA LÓGICA ---
+        // Si p.recurso no es null (el libro existe), leemos el objeto real. 
+        // Si es null (fue borrado), usamos el histórico.
+        let nombreRecurso = "Desconocido";
+        if (p.recurso) {
+            nombreRecurso = p.recurso.titulo ? p.recurso.titulo : p.recurso.nombre;
+        } else {
         // Determinar qué recurso es (Libro o Material) y sacar su nombre/título
         const nombreRecurso = p.recurso.titulo ? p.recurso.titulo : p.recurso.nombre;
-        
+		nombreRecurso = p.nombreRecursoHistorico + " (Eliminado del catálogo)";
+        }
         // Colores y botones según el estado
         let claseEstado = '';
         let botonesAccion = '';

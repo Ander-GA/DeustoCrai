@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     
- 
     List<Prestamo> findByUsuarioId(Long usuarioId);
+    
+    //Buscar todos los préstamos atados a un recurso específico
+    List<Prestamo> findByRecursoId(Long recursoId);
 }
