@@ -21,19 +21,23 @@ public class PrestamoService {
     private LibroRepository libroRepository;
 
     public List<Prestamo> obtenerPrestamosPorUsuario(User usuario) {
-
         return prestamoRepository.findByUsuarioId(usuario.getId());
+    }
+
+    // NUEVO MÉTODO PARA EL BIBLIOTECARIO: Obtener todos los préstamos del sistema
+    public List<Prestamo> obtenerTodosLosPrestamos() {
+        return prestamoRepository.findAll();
     }
 
     public Prestamo realizarPrestamo(User usuario, Long libroId) {
         Optional<Libro> libroOpt = libroRepository.findById(libroId);
         
-        // Si el libro existe y está disponible
         if (libroOpt.isPresent() && libroOpt.get().isDisponible()) {
             Libro libro = libroOpt.get();
-            libro.setDisponible(false); 
+            libro.setDisponible(false); // El libro se reserva automáticamente para que nadie más lo coja
             libroRepository.save(libro); 
             
+            // Crea el préstamo (por defecto se pondrá en PENDIENTE_ENTREGA por el constructor)
             Prestamo prestamo = new Prestamo(usuario, libro);
             return prestamoRepository.save(prestamo);
         }
@@ -46,14 +50,36 @@ public class PrestamoService {
         if (prestamoOpt.isPresent()) {
             Prestamo prestamo = prestamoOpt.get();
             
-            if (prestamo.getUsuario().getId().equals(usuario.getId())) {
+            // Validamos que el préstamo pertenezca al usuario y no esté ya devuelto
+            if (prestamo.getUsuario().getId().equals(usuario.getId()) && prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
                 Libro libro = (Libro) prestamo.getRecurso();
-                libro.setDisponible(true); 
+                libro.setDisponible(true); // El libro vuelve a estar disponible
                 libroRepository.save(libro);
                 
-                prestamoRepository.delete(prestamo); 
+                prestamo.setEstado(Prestamo.EstadoPrestamo.DEVUELTO); // Marcamos como devuelto
+                prestamoRepository.save(prestamo); // Actualizamos, NO borramos
                 return true;
             }
+        }
+        return false;
+    }
+
+    public boolean cambiarEstadoPrestamo(Long prestamoId, Prestamo.EstadoPrestamo nuevoEstado) {
+        Optional<Prestamo> prestamoOpt = prestamoRepository.findById(prestamoId);
+        
+        if (prestamoOpt.isPresent()) {
+            Prestamo prestamo = prestamoOpt.get();
+            prestamo.setEstado(nuevoEstado);
+            
+            // Si el bibliotecario marca como devuelto, tenemos que liberar el libro
+            if (nuevoEstado == Prestamo.EstadoPrestamo.DEVUELTO) {
+                Libro libro = (Libro) prestamo.getRecurso();
+                libro.setDisponible(true);
+                libroRepository.save(libro);
+            }
+            
+            prestamoRepository.save(prestamo);
+            return true;
         }
         return false;
     }

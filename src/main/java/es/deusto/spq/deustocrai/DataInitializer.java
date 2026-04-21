@@ -86,7 +86,15 @@ public class DataInitializer {
             admin.setEmail("1");
             admin.setRole(User.Role.ADMIN);
 
-            userRepository.saveAll(List.of(ander, inigo, emilio, gaizka, jacqueline, admin));
+            User bibliotecario = new User();
+            bibliotecario.setNombre("Biblio");
+            bibliotecario.setApellidos("Tecario");
+            bibliotecario.setPassword("biblio123");
+            bibliotecario.setEmail("bibliotecario@deusto.es");
+            bibliotecario.setRole(User.Role.BIBLIOTECARIO);
+
+            // Y modificar la línea de guardado:
+            userRepository.saveAll(List.of(ander, inigo, emilio, gaizka, jacqueline, admin, bibliotecario));
             logger.info("Usuarios de DeustoCrai guardados!");
 
             // 3. Crear Aulas (Salas del CRAI)

@@ -21,8 +21,9 @@ public class PrestamoController {
     @Autowired
     private AuthService authService;
 
+    // --- Endpoints para el ESTUDIANTE ---
+
     @GetMapping("/mis-prestamos")
-    // Añadimos ("Authorization") explícitamente
     public ResponseEntity<List<Prestamo>> misPrestamos(@RequestHeader("Authorization") String token) {
         User user = authService.getEmpleadoByToken(token);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -31,7 +32,6 @@ public class PrestamoController {
     }
 
     @PostMapping("/prestar/{libroId}")
-    // Añadimos ("libroId") explícitamente
     public ResponseEntity<?> prestarLibro(@RequestHeader("Authorization") String token, @PathVariable("libroId") Long libroId) {
         User user = authService.getEmpleadoByToken(token);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -46,7 +46,6 @@ public class PrestamoController {
     }
 
     @PostMapping("/devolver/{prestamoId}")
-    // Añadimos ("prestamoId") explícitamente
     public ResponseEntity<?> devolverLibro(@RequestHeader("Authorization") String token, @PathVariable("prestamoId") Long prestamoId) {
         User user = authService.getEmpleadoByToken(token);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -57,6 +56,42 @@ public class PrestamoController {
             return ResponseEntity.ok().body("{\"mensaje\": \"Libro devuelto con éxito\"}");
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al devolver el libro");
+        }
+    }
+
+    // --- Endpoints para el BIBLIOTECARIO ---
+
+    @GetMapping("/todos")
+    public ResponseEntity<List<Prestamo>> obtenerTodosLosPrestamos(@RequestHeader("Authorization") String token) {
+        User user = authService.getEmpleadoByToken(token);
+        
+        // Verificamos que el usuario exista y tenga permiso de bibliotecario o admin
+        if (user == null || (user.getRole() != User.Role.BIBLIOTECARIO && user.getRole() != User.Role.ADMIN)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 Prohibido
+        }
+        
+        return ResponseEntity.ok(prestamoService.obtenerTodosLosPrestamos());
+    }
+
+    @PutMapping("/{prestamoId}/estado")
+    public ResponseEntity<?> cambiarEstadoPrestamo(
+            @RequestHeader("Authorization") String token, 
+            @PathVariable("prestamoId") Long prestamoId,
+            @RequestParam("nuevoEstado") Prestamo.EstadoPrestamo nuevoEstado) {
+        
+        User user = authService.getEmpleadoByToken(token);
+        
+        // Verificamos permisos
+        if (user == null || (user.getRole() != User.Role.BIBLIOTECARIO)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para realizar esta acción");
+        }
+
+        boolean actualizado = prestamoService.cambiarEstadoPrestamo(prestamoId, nuevoEstado);
+        
+        if (actualizado) {
+            return ResponseEntity.ok().body("{\"mensaje\": \"Estado actualizado con éxito\"}");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró el préstamo");
         }
     }
 }
