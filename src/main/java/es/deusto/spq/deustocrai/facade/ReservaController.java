@@ -46,4 +46,10 @@ public class ReservaController {
             .map(r -> new ResponseEntity<>(r, HttpStatus.CREATED))
             .orElseGet(() -> new ResponseEntity<>(HttpStatus.CONFLICT)); // 409 si está ocupada
     }
+    
+    @GetMapping("/activas")
+    public ResponseEntity<List<Reserva>> obtenerReservasActivas() {
+        // Al ser salas ocupadas, podría ser un dato público o requerir token según tus reglas de negocio
+        return ResponseEntity.ok(reservaService.obtenerReservasActivas());
+    }
 }

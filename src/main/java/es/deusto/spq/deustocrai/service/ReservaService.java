@@ -34,4 +34,8 @@ public class ReservaService {
 
         return Optional.of(reservaRepository.save(nueva));
     }
+    
+    public List<Reserva> obtenerReservasActivas() {
+        return reservaRepository.findReservasActivas();
+    }
 }
