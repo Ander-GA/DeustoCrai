@@ -10,7 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+
+    steps:
+    - uses: action/checkout@v4
+    - name: Set up JDK 21
 
     # -------- CAMBIO 1: Añadimos la base de datos MySQL temporal --------
     services:
