@@ -29,6 +29,15 @@ public class LibroControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private es.deusto.spq.deustocrai.dao.UserRepository userRepository;
+    
+    @Autowired
+    private es.deusto.spq.deustocrai.dao.PrestamoRepository prestamoRepository;
+
+    @Autowired
+    private es.deusto.spq.deustocrai.dao.LibroRepository libroRepository;
+    
     @Test
     @DisplayName("Debería registrar un nuevo libro correctamente y devolver 201 Created")
     public void testAnadirLibroSuccess() throws Exception {
@@ -62,5 +71,31 @@ public class LibroControllerTest {
 
         mockMvc.perform(delete("/api/libros/" + id))
                 .andExpect(status().isNotFound());
+    }
+    @Test
+    @DisplayName("Debería fallar (409 Conflict) al borrar un libro que actualmente está prestado")
+    public void testBorrarLibroConflicto() throws Exception {
+        // 1. Creamos un usuario de prueba en la BD para poder hacer el préstamo
+        es.deusto.spq.deustocrai.entity.User user = new es.deusto.spq.deustocrai.entity.User();
+        user.setEmail("estudiante-conflicto@deusto.es");
+        user.setPassword("password123");
+        user.setNombre("Usuario");
+        user.setApellidos("Conflicto");
+        user.setRole(es.deusto.spq.deustocrai.entity.User.Role.ESTUDIANTE);
+        user = userRepository.save(user);
+
+        // 2. Creamos y guardamos un libro real en la BD
+        Libro libroPrestado = new Libro("Libro En Préstamo", "123-4567890123", "Autor Pruebas");
+        libroPrestado.setDisponible(false); // Lo marcamos como no disponible
+        libroPrestado = libroRepository.save(libroPrestado);
+
+        // 3. Creamos el préstamo activo (PENDIENTE_ENTREGA) asociando el usuario y el libro
+        es.deusto.spq.deustocrai.entity.Prestamo prestamo = new es.deusto.spq.deustocrai.entity.Prestamo(user, libroPrestado);
+        prestamo.setEstado(es.deusto.spq.deustocrai.entity.Prestamo.EstadoPrestamo.PENDIENTE_ENTREGA);
+        prestamoRepository.save(prestamo);
+
+        // 4. Intentamos borrar el libro por la API
+        mockMvc.perform(delete("/api/libros/" + libroPrestado.getId()))
+                .andExpect(status().isConflict()); // Debe devolver 409
     }
 }
