@@ -63,8 +63,10 @@
         .calendar-grid { flex: 1; display: grid; grid-template-columns: 80px repeat(7, 1fr); border: 1px solid #ddd; overflow-y: auto; }
         .time-slot { height: 50px; border: 0.5px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.8em; }
         .day-header { text-align: center; padding: 10px; font-weight: bold; border-bottom: 2px solid var(--azul-deusto); background: #f9f9f9; }
-		.ocupado { background-color: #d9534f; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-		.libre { background-color: #5cb85c; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }    </style>
+        
+        .ocupado { background-color: #d9534f; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .libre { background-color: #5cb85c; color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    </style>
 </head>
 <body>
 
@@ -103,7 +105,7 @@
 
     <main class="main-panel" id="panel-calendario">
         <div class="calendar-header">
-            <h3 id="mes-anio-label">MARZO DE 2026</h3>
+            <h3 id="mes-anio-label">CARGANDO...</h3>
             <div>
                 <button onclick="navegarSemana(-7)"><i class="fas fa-chevron-left"></i> Anterior</button>
                 <button onclick="navegarSemana(7)">Siguiente <i class="fas fa-chevron-right"></i></button>
@@ -113,7 +115,7 @@
     </main>
 
     <script>
-        let fechaReferencia = new Date("2026-03-23");
+        let fechaReferencia = new Date(); // Inicializado a la fecha de hoy
         let salaActual = null;
         let usuarioActual = null;
         const days = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
@@ -132,6 +134,10 @@
         }
 
         async function init() {
+            // Predeterminar fecha de hoy en el input
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('reserva-fecha').value = hoy;
+
             await cargarUsuarioSesion();
             try {
                 const resp = await fetch('/api/salas');
@@ -162,65 +168,90 @@
             renderVisualCalendar();
         }
 
-		async function confirmarReserva() {
-		    const token = localStorage.getItem('token');
-		    const fecha = document.getElementById('reserva-fecha').value;
-		    const hora = document.getElementById('reserva-hora').value; // ej: "08:30"
+        async function renderVisualCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const label = document.getElementById('mes-anio-label');
+            label.innerText = fechaReferencia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            
+            grid.innerHTML = '<div class="time-slot" style="background:#eee;"></div>';
+            const lunes = new Date(fechaReferencia);
+            const dayNum = lunes.getDay() || 7;
+            lunes.setDate(lunes.getDate() - dayNum + 1);
 
-		    if(!fecha) { alert("Selecciona una fecha"); return; }
-		    
-		    // Verificamos que el usuario tiene un ID válido
-		    if(!usuarioActual || !usuarioActual.id) { 
-		        alert("Error crítico: No se ha podido identificar tu usuario. Vuelve a iniciar sesión."); 
-		        return; 
-		    }
+            let reservas = [];
+            try {
+                const token = localStorage.getItem('token');
+                const urlBlindada = `/api/reservas/aula/${salaActual.id}?t=${new Date().getTime()}`;
+                const resp = await fetch(urlBlindada, {
+                    headers: { 'Authorization': token, 'Cache-Control': 'no-cache' }
+                });
+                if(resp.ok) reservas = await resp.json();
+            } catch(e) { console.error("Error cargando reservas:", e); }
 
-		    // Calculamos el inicio y fin de manera exacta, evitando problemas de zona horaria (UTC)
-		    const inicio = `${fecha}T${hora}:00`;
-		    const horaFinNum = parseInt(hora.split(':')[0]) + 3; // Le sumamos 3 horas
-		    const fin = `${fecha}T${String(horaFinNum).padStart(2, '0')}:30:00`;
+            for(let i=0; i<7; i++) {
+                let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+                grid.innerHTML += `<div class="day-header">${days[i]}<br><span style="font-size:0.8em;">${d.getDate()}/${d.getMonth()+1}</span></div>`;
+            }
 
-		    const reserva = {
-		        usuario: { id: usuarioActual.id },
-		        aula: { id: salaActual.id },
-		        fechaHoraInicio: inicio,
-		        fechaHoraFin: fin
-		    };
+            franjas.forEach(h => {
+                // Extracción corregida de hora y minutos
+                const [horaCelda, minCelda] = h.split(':').map(Number);
+                grid.innerHTML += `<div class="time-slot" style="font-weight:bold; background:#f9f9f9;">${h}</div>`;
+                
+                for(let i=0; i<7; i++) {
+                    let d = new Date(lunes); d.setDate(lunes.getDate() + i);
+                    
+                    let ocupado = reservas.some(r => {
+                        let f = r.fechaHoraInicio;
+                        let dB = Array.isArray(f) ? new Date(f[0], f[1]-1, f[2], f[3], f[4]||0) : new Date(f);
+                        
+                        return dB.getFullYear() === d.getFullYear() &&
+                               dB.getMonth() === d.getMonth() &&
+                               dB.getDate() === d.getDate() &&
+                               dB.getHours() === horaCelda &&
+                               dB.getMinutes() === minCelda;
+                    });
+                    
+                    grid.innerHTML += `<div class="time-slot">${ocupado ? '<div class="ocupado">OCUPADO</div>' : '<div class="libre">LIBRE</div>'}</div>`;
+                }
+            });
+        }
 
-		    try {
-		        const response = await fetch('/api/salas/reservar', {
-		            method: 'POST',
-		            headers: { 'Content-Type': 'application/json', 'Authorization': token },
-		            body: JSON.stringify(reserva)
-		        });
+        async function confirmarReserva() {
+            const token = localStorage.getItem('token');
+            const fecha = document.getElementById('reserva-fecha').value;
+            const hora = document.getElementById('reserva-hora').value;
 
-		        if (response.ok) {
-		            alert("¡Reserva guardada en la base de datos con éxito!");
-					window.location.href = "index.html";
-					} else {
-		            // Ahora leemos el error REAL que nos manda Spring Boot
-		            const textoError = await response.text();
-		            alert("Atención: " + (textoError || "Error interno del servidor. Revisa la consola de Spring Boot."));
-		        }
-		    } catch (e) { 
-		        console.error(e); 
-		        alert("Error de conexión con el servidor.");
-		    }
-		}
-		
-		async function cargarMisReservas() {
-		    const resp = await fetch(`/api/salas/usuario/${usuarioActual.id}`);
-		    const misReservas = await resp.json();
-		    
-		    const listaHtml = misReservas.map(r => `
-		        <li>
-		            <strong>${r.aula.nombre}</strong>: 
-		            ${new Date(r.fechaHoraInicio).toLocaleString()}
-		        </li>
-		    `).join('');
-		    
-		    document.getElementById('contenedor-reservas').innerHTML = listaHtml;
-		}
+            if(!fecha) { alert("Selecciona una fecha"); return; }
+            if(!usuarioActual || !usuarioActual.id) { alert("Error crítico de sesión."); return; }
+
+            const inicio = `${fecha}T${hora}:00`;
+            const horaFinNum = parseInt(hora.split(':')[0]) + 3;
+            const fin = `${fecha}T${String(horaFinNum).padStart(2, '0')}:30:00`;
+
+            const reserva = {
+                usuario: { id: usuarioActual.id },
+                aula: { id: salaActual.id },
+                fechaHoraInicio: inicio,
+                fechaHoraFin: fin
+            };
+
+            try {
+                const response = await fetch('/api/salas/reservar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(reserva)
+                });
+
+                if (response.ok) {
+                    alert("¡Reserva guardada con éxito!");
+                    window.location.href = "index.html";
+                } else {
+                    const textoError = await response.text();
+                    alert("Atención: " + textoError);
+                }
+            } catch (e) { console.error(e); alert("Error de conexión con el servidor."); }
+        }
 
         function navegarSemana(dias) {
             fechaReferencia.setDate(fechaReferencia.getDate() + dias);
@@ -234,58 +265,6 @@
                 renderVisualCalendar();
             }
         }
-
-		async function renderVisualCalendar() {
-		            const grid = document.getElementById('calendar-grid');
-		            const label = document.getElementById('mes-anio-label');
-		            label.innerText = fechaReferencia.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
-		            
-		            grid.innerHTML = '<div class="time-slot" style="background:#eee;"></div>';
-		            const lunes = new Date(fechaReferencia);
-		            const dayNum = lunes.getDay() || 7;
-		            lunes.setDate(lunes.getDate() - dayNum + 1);
-
-		            let reservas = [];
-		            try {
-		                const token = localStorage.getItem('token');
-		                // MAGIA ANTI-CACHÉ: Añadimos un timestamp al final de la URL
-		                const urlBlindada = `/api/reservas/aula/${salaActual.id}?t=${new Date().getTime()}`;
-		                const resp = await fetch(urlBlindada, {
-		                    headers: { 
-		                        'Authorization': token,
-		                        'Cache-Control': 'no-cache' // Forzamos a no usar caché
-		                    }
-		                });
-		                
-		                if(resp.ok) reservas = await resp.json();
-		            } catch(e) { console.error("Error cargando reservas:", e); }
-
-		            for(let i=0; i<7; i++) {
-		                let d = new Date(lunes); d.setDate(lunes.getDate() + i);
-		                grid.innerHTML += `<div class="day-header">${days[i]}<br><span style="font-size:0.8em;">${d.getDate()}/${d.getMonth()+1}</span></div>`;
-		            }
-
-		            franjas.forEach(h => {
-		                grid.innerHTML += `<div class="time-slot" style="font-weight:bold; background:#f9f9f9;">${h}</div>`;
-		                for(let i=0; i<7; i++) {
-		                    let d = new Date(lunes); d.setDate(lunes.getDate() + i);
-		                    
-		                    // Comprobación INFALIBLE con objetos Date puros
-							let ocupado = reservas.some(r => {
-							    let f = r.fechaHoraInicio;
-							    let dB = Array.isArray(f) ? new Date(f[0], f[1]-1, f[2], f[3], f[4]||0) : new Date(f);
-							    
-							    return dB.getFullYear() === d.getFullYear() &&
-							           dB.getMonth() === d.getMonth() &&
-							           dB.getDate() === d.getDate() &&
-							           dB.getHours() === horaCelda &&
-							           dB.getMinutes() === minCelda;
-							});
-		                    
-		                    grid.innerHTML += `<div class="time-slot">${ocupado ? '<div class="ocupado">OCUPADO</div>' : '<div class="libre">LIBRE</div>'}</div>`;
-		                }
-		            });
-		        }
 
         window.onload = init;
     </script>
