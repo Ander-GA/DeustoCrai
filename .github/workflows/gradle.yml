@@ -12,11 +12,8 @@ jobs:
     permissions:
       contents: write
 
-    steps:
-    - uses: action/checkout@v4
-    - name: Set up JDK 21
-
     # -------- CAMBIO 1: Añadimos la base de datos MySQL temporal --------
+    # Los servicios van aquí, antes de la palabra "steps:"
     services:
       mysql:
         image: mysql:8.0
@@ -34,6 +31,7 @@ jobs:
           --health-retries=3
     # ---------------------------------------------------------------------
 
+    # Aquí empieza tu ÚNICO bloque de pasos
     steps:
     - uses: actions/checkout@v4
     
@@ -54,6 +52,7 @@ jobs:
     - name: Build with Gradle Wrapper
       run: ./gradlew build
 
+  # Este es el segundo Job (El que da avisos de seguridad)
   dependency-submission:
     runs-on: ubuntu-latest
     permissions:
