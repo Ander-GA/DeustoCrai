@@ -21,6 +21,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Authorization Controller", description = "Login and logout operations")
@@ -80,7 +82,7 @@ public class AuthController {
     	    description = "Crea un nuevo usuario en el sistema con el rol especificado (ESTUDIANTE, BIBLIOTECARIO o ADMIN)."
     	)
 	@PostMapping("/register")
-	public ResponseEntity<String> register(@RequestBody CreateUserDTO userDTO) { // Cambio de User a CreateUserDTO
+	public ResponseEntity<?> register(@Valid @RequestBody CreateUserDTO userDTO) { // Cambio de User a CreateUserDTO
 	    // Llamada al servicio pasando el DTO
 	    Optional<User> registeredUser = authService.register(userDTO);
 
