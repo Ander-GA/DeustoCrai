@@ -32,6 +32,7 @@ public class Prestamo {
 
     private LocalDate fechaPrestamo;
     private LocalDate fechaDevolucionPrevista;
+    private LocalDate fechaDevolucionReal;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -66,4 +67,12 @@ public class Prestamo {
     public LocalDate getFechaDevolucionPrevista() { return fechaDevolucionPrevista; }
     public EstadoPrestamo getEstado() { return estado; }
     public void setEstado(EstadoPrestamo estado) { this.estado = estado; }
+
+	public LocalDate getFechaDevolucionReal() {
+		return fechaDevolucionReal;
+	}
+
+	public void setFechaDevolucionReal(LocalDate fechaDevolucionReal) {
+		this.fechaDevolucionReal = fechaDevolucionReal;
+	}
 }

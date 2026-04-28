@@ -74,20 +74,32 @@ public class PrestamoController {
         }
     }
 
+    @Operation(summary = "Devolver recurso", description = "El estudiante devuelve un libro o material prestado.")
     @PostMapping("/devolver/{prestamoId}")
-    public ResponseEntity<?> devolverLibro(@RequestHeader("Authorization") String token, @PathVariable("prestamoId") Long prestamoId) {
+    public ResponseEntity<?> devolverRecurso(
+            // Añadimos nuestro truco de Token-Auth
+            @Parameter(in = ParameterIn.HEADER, name = "Token-Auth", required = true, description = "Pega aquí el Token")
+            @RequestHeader(value = "Token-Auth", required = false) String tokenSwagger,
+            @RequestHeader(value = "Authorization", required = false) String tokenReal,
+            @PathVariable("prestamoId") Long prestamoId) {
+        
+        String token = (tokenReal != null && !tokenReal.isEmpty()) ? tokenReal : tokenSwagger;
+
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se ha recibido el token.");
+        }
+
         User user = authService.getEmpleadoByToken(token);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         boolean devuelto = prestamoService.devolverPrestamo(user, prestamoId);
         
         if (devuelto) {
-            return ResponseEntity.ok().body("{\"mensaje\": \"Libro devuelto con éxito\"}");
+            return ResponseEntity.ok().body("{\"mensaje\": \"Recurso devuelto con éxito\"}");
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al devolver el libro");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al devolver el recurso");
         }
     }
-
     // --- Endpoints para el BIBLIOTECARIO ---
 
     @GetMapping("/todos")
@@ -174,5 +186,27 @@ public class PrestamoController {
         }
         
         return ResponseEntity.ok(prestamoService.obtenerPrestamosLibrosActivos());
+    }
+    
+    @Operation(summary = "Ver estadísticas de uso", description = "Muestra el total de préstamos, activos, devueltos a tiempo y con retraso.")
+    @GetMapping("/mis-estadisticas")
+    public ResponseEntity<?> misEstadisticas(
+            @Parameter(in = ParameterIn.HEADER, name = "Token-Auth", required = true)
+            @RequestHeader(value = "Token-Auth", required = false) String tokenSwagger,
+            @RequestHeader(value = "Authorization", required = false) String tokenReal) {
+        
+        String token = (tokenReal != null && !tokenReal.isEmpty()) ? tokenReal : tokenSwagger;
+
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se ha recibido el token.");
+        }
+
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido.");
+        }
+        
+        // El servicio devuelve un Map, y Spring lo convierte en JSON automáticamente
+        return ResponseEntity.ok(prestamoService.obtenerEstadisticasUsuario(user));
     }
 }
