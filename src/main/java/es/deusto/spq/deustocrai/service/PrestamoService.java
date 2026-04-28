@@ -10,7 +10,10 @@ import es.deusto.spq.deustocrai.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -74,7 +77,7 @@ public class PrestamoService {
 					material.setDisponible(true);
 					materialRepository.save(material);
 				}
-				
+                prestamo.setFechaDevolucionReal(LocalDate.now());
 				prestamo.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
 				prestamoRepository.save(prestamo);
 				return true;
@@ -93,6 +96,7 @@ public class PrestamoService {
             
             // Si el bibliotecario marca como devuelto, tenemos que liberar el libro
             if (nuevoEstado == Prestamo.EstadoPrestamo.DEVUELTO) {
+            	prestamo.setFechaDevolucionReal(LocalDate.now());
                 if (prestamo.getRecurso() instanceof Libro) {
                 	Libro libro = (Libro) prestamo.getRecurso();
                 	libro.setDisponible(true);
@@ -130,5 +134,35 @@ public class PrestamoService {
     
     public List<Prestamo> obtenerPrestamosLibrosActivos() {
         return prestamoRepository.findLibrosPrestadosActivos();
+    }
+    
+    public Map<String, Integer> obtenerEstadisticasUsuario(User usuario) {
+        List<Prestamo> prestamos = prestamoRepository.findByUsuarioId(usuario.getId());
+        
+        int total = prestamos.size();
+        int activos = 0;
+        int aTiempo = 0;
+        int conRetraso = 0;
+
+        for (Prestamo p : prestamos) {
+            if (p.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
+                activos++;
+            } else {
+                if (p.getFechaDevolucionReal() != null && p.getFechaDevolucionReal().isAfter(p.getFechaDevolucionPrevista())) {
+                    conRetraso++;
+                } else {
+                    aTiempo++; 
+                }
+            }
+        }
+
+        // Empaquetamos los resultados en un Mapa (Diccionario)
+        Map<String, Integer> estadisticas = new HashMap<>();
+        estadisticas.put("totalPrestamos", total);
+        estadisticas.put("prestamosActivos", activos);
+        estadisticas.put("devueltosATiempo", aTiempo);
+        estadisticas.put("devueltosConRetraso", conRetraso);
+
+        return estadisticas;
     }
 }
