@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.0'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco' // Plugin para los reportes de cobertura
 }
 
 group = 'es.deusto.spq.deustocrai'
@@ -28,7 +29,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     
-    // --- DEPENDENCIAS DE TEST (CRUCIALES PARA EL SPRINT 2) ---
+    // Documentación API (Swagger UI)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+    
+    // --- DEPENDENCIAS DE TEST ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.hamcrest:hamcrest:2.2'
@@ -36,24 +40,51 @@ dependencies {
     // ContiPerf y JUnit 4 (Para los tests de rendimiento)
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.databene:contiperf:2.3.4'
-    
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 }
 
+// CONFIGURACIÓN DE JACOCO (CORREGIDA)
+jacoco {
+    toolVersion = "0.8.12" // Fíjate en la 'V' mayúscula
+}
+
+// Configuración de la tarea base de test
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport 
 }
 
-// Tareas separadas para organizar tus tests en el pipeline
+// Tarea para generar el reporte de cobertura
+jacocoTestReport {
+    dependsOn test 
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+    
+    // Excluimos DTOs y Entidades para que la estadística sea sobre la lógica (Servicios)
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                "es/deusto/spq/deustocrai/entity/**",
+                "es/deusto/spq/deustocrai/dto/**"
+            ])
+        }))
+    }
+}
+
+// TAREAS PERSONALIZADAS (Organización del Sprint 2)
 task testUnitario(type: Test) {
     useJUnitPlatform { includeTags 'Unitario' }
+    finalizedBy jacocoTestReport
 }
 
 task testIntegracion(type: Test) {
     useJUnitPlatform { includeTags 'Integracion' }
+    finalizedBy jacocoTestReport
 }
 
 task testRendimiento(type: Test) {
-    dependsOn clean // Esto obliga a borrar lo viejo y crear carpetas nuevas
+    dependsOn clean
     useJUnitPlatform { includeTags 'Rendimiento' }
 }
