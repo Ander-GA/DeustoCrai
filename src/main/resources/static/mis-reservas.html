@@ -60,16 +60,68 @@
 		             let dateObj = new Date(r.fechaHoraInicio);						                    
 		             let nombreSala = r.aula ? r.aula.nombre : "Sala eliminada/desconocida";
 		                            
-		             container.innerHTML += `
-		               <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-		                    <strong>Sala:</strong> ${nombreSala} <br>
-		                    <strong>Fecha:</strong> ${dateObj.toLocaleDateString()} <br>
-		                    <strong>Horario:</strong> ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-		               </div>`;
+					 container.innerHTML += `
+					    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative;">
+					         <strong>Sala:</strong> ${nombreSala} <br>
+					         <strong>Fecha:</strong> ${dateObj.toLocaleDateString()} <br>
+					         <strong>Inicio:</strong> ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} <br>
+					         <strong>Fin:</strong> ${new Date(r.fechaHoraFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+					         
+					         <div style="margin-top: 15px; display: flex; gap: 10px;">
+					             <button onclick="extenderReserva(${r.id})" style="background: #003366; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">+ 30 Minutos</button>
+					             <button onclick="cancelarReserva(${r.id})" style="background: #d9534f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+					         </div>
+					    </div>`;
 		        });
 		    } catch (error) {
 		        console.error("Error:", error);
 		        document.getElementById('lista-reservas').innerHTML = "<p>Error al cargar las reservas. Verifica tu conexión.</p>";
+		    }
+		}
+		
+		
+		
+		async function cancelarReserva(id) {
+		    if (!confirm("¿Seguro que quieres cancelar esta reserva?")) return;
+		    
+		    const token = localStorage.getItem('token');
+		    try {
+		        const response = await fetch(`/api/reservas/${id}`, {
+		            method: 'DELETE',
+		            headers: { 'Authorization': token }
+		        });
+		        
+		        if (response.ok) {
+		            alert("Reserva cancelada correctamente.");
+		            cargarReservas(); // Recargamos la lista
+		        } else {
+		            alert("No se pudo cancelar la reserva.");
+		        }
+		    } catch (e) {
+		        console.error(e);
+		        alert("Error de conexión.");
+		    }
+		}
+
+		async function extenderReserva(id) {
+		    const token = localStorage.getItem('token');
+		    // Mandamos 30 minutos por defecto como parámetro
+		    try {
+		        const response = await fetch(`/api/reservas/${id}/extender?minutos=30`, {
+		            method: 'PUT',
+		            headers: { 'Authorization': token }
+		        });
+		        
+		        if (response.ok) {
+		            alert("¡Reserva extendida 30 minutos!");
+		            cargarReservas(); // Recargamos la lista para ver la nueva hora
+		        } else {
+		            const errorMsg = await response.text();
+		            alert("Atención: " + errorMsg);
+		        }
+		    } catch (e) {
+		        console.error(e);
+		        alert("Error de conexión al extender.");
 		    }
 		}
 		

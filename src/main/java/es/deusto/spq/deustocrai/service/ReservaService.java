@@ -3,6 +3,8 @@ package es.deusto.spq.deustocrai.service;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,5 +39,61 @@ public class ReservaService {
     
     public List<Reserva> obtenerReservasActivas() {
         return reservaRepository.findReservasActivas();
+    }
+    
+
+    @Transactional
+    public boolean cancelarReserva(Long id, Long usuarioId) {
+        Optional<Reserva> optReserva = reservaRepository.findById(id);
+        
+        if (optReserva.isPresent()) {
+            Reserva reserva = optReserva.get();
+            // Comprobación defensiva: Evita el error si el usuario de la DB es nulo
+            if (reserva.getUsuario() != null && reserva.getUsuario().getId().equals(usuarioId)) {
+                reservaRepository.deleteById(id);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Transactional
+    public Optional<Reserva> extenderReserva(Long id, int minutosExtra, Long usuarioId) {
+        Optional<Reserva> optReserva = reservaRepository.findById(id);
+        
+        if (optReserva.isEmpty()) {
+            return Optional.empty(); 
+        }
+
+        Reserva reservaActual = optReserva.get();
+
+        // Validar de forma segura que la reserva es del usuario
+        if (reservaActual.getUsuario() == null || !reservaActual.getUsuario().getId().equals(usuarioId)) {
+            return Optional.empty();
+        }
+
+        // ¡AQUÍ ESTABA EL ERROR 500! Si la sala fue borrada misteriosamente, evitamos el colapso
+        if (reservaActual.getAula() == null) {
+            return Optional.empty();
+        }
+
+        LocalDateTime nuevaFechaFin = reservaActual.getFechaHoraFin().plusMinutes(minutosExtra);
+
+        // Comprobamos si hay conflicto
+        List<Reserva> existentes = reservaRepository.findByAulaId(reservaActual.getAula().getId());
+        
+        boolean conflicto = existentes.stream()
+            .filter(r -> !r.getId().equals(id)) // Ignorar la reserva actual
+            .anyMatch(r -> 
+                reservaActual.getFechaHoraInicio().isBefore(r.getFechaHoraFin()) && 
+                r.getFechaHoraInicio().isBefore(nuevaFechaFin)
+            );
+
+        if (conflicto) {
+            return Optional.empty();
+        }
+
+        reservaActual.setFechaHoraFin(nuevaFechaFin);
+        return Optional.of(reservaRepository.save(reservaActual));
     }
 }
