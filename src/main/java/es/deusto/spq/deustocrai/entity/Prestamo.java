@@ -75,4 +75,12 @@ public class Prestamo {
 	public void setFechaDevolucionReal(LocalDate fechaDevolucionReal) {
 		this.fechaDevolucionReal = fechaDevolucionReal;
 	}
+
+	public void setFechaPrestamo(LocalDate fechaPrestamo) {
+		this.fechaPrestamo = fechaPrestamo;
+	}
+
+	public void setFechaDevolucionPrevista(LocalDate fechaDevolucionPrevista) {
+		this.fechaDevolucionPrevista = fechaDevolucionPrevista;
+	}
 }
