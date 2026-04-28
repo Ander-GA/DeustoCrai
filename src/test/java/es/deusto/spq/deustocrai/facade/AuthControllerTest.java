@@ -4,8 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.is;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
+import es.deusto.spq.deustocrai.dto.CreateUserDTO;
+import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.User;
 
 @SpringBootTest
@@ -28,22 +30,35 @@ public class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @BeforeEach
+    void setUp() {
+        // Preparamos un usuario en la BD para que los tests de login funcionen
+        // sin depender del DataInitializer
+        if(userRepository.findByEmail("testlogin@deusto.es").isEmpty()) {
+            User testUser = new User();
+            testUser.setEmail("testlogin@deusto.es");
+            testUser.setPassword("password123");
+            testUser.setNombre("Test");
+            testUser.setApellidos("Login");
+            testUser.setRole(User.Role.ESTUDIANTE);
+            userRepository.save(testUser);
+        }
+    }
+
     @Test
     @DisplayName("Debería retornar OK y un token cuando las credenciales son correctas")
     public void testLoginSuccess() throws Exception {
-        // 1. Preparar las credenciales (deben coincidir con las creadas en DataInitializer)
         CredentialsDTO loginRequest = new CredentialsDTO();
-        loginRequest.setEmail("1"); // Ejemplo de email según tu test previo
-        loginRequest.setPassword("1");
+        loginRequest.setEmail("testlogin@deusto.es"); 
+        loginRequest.setPassword("password123");
 
-        // 2. Ejecutar la petición POST al endpoint /auth/login
-        // Nota: Asegúrate de que el prefijo /api/ esté configurado o quítalo si no es necesario
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
-                // 3. Validar que la respuesta sea 200 OK
                 .andExpect(status().isOk())
-                // 4. Validar que el cuerpo contenga el token generado
                 .andExpect(content().string(notNullValue()));
     }
 
@@ -51,25 +66,26 @@ public class AuthControllerTest {
     @DisplayName("Debería retornar 401 Unauthorized cuando la contraseña es incorrecta")
     public void testLoginFailure() throws Exception {
         CredentialsDTO wrongRequest = new CredentialsDTO();
-        wrongRequest.setEmail("1");
-        wrongRequest.setPassword("password-incorrecta");
+        wrongRequest.setEmail("testlogin@deusto.es");
+        wrongRequest.setPassword("contrasena-falsa");
 
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(wrongRequest)))
-                // Validar que el servicio deniega el acceso con 401
                 .andExpect(status().isUnauthorized());
     }
+
     @Test
     @DisplayName("Debería registrar un usuario correctamente y devolver 201 Created")
     public void testRegisterSuccess() throws Exception {
-        User newUser = new User();
-        newUser.setEmail("nuevo@deusto.es");
-        newUser.setPassword("password123");
-        newUser.setNombre("Prueba");
-        newUser.setApellidos("Test");
-        // Usamos el Enum que ya tienes en la entidad User
-        newUser.setRole(User.Role.ESTUDIANTE); 
+        // CORRECCIÓN: Usamos CreateUserDTO en lugar de la entidad User
+        CreateUserDTO newUser = new CreateUserDTO();
+        newUser.setEmail("nuevo-registro@deusto.es");
+        newUser.setPassword("12345");
+        newUser.setNombre("Nuevo");
+        newUser.setApellidos("Usuario");
+        // Suponiendo que tu DTO usa este enumerado
+        newUser.setRole(CreateUserDTO.Role.ESTUDIANTE); 
 
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -81,11 +97,13 @@ public class AuthControllerTest {
     @Test
     @DisplayName("Debería fallar al registrar un usuario con un email que ya existe")
     public void testRegisterFailureDuplicateEmail() throws Exception {
-        // Usamos el email "1" que sabemos que ya existe por el DataInitializer
-        User duplicateUser = new User();
-        duplicateUser.setEmail("1"); 
-        duplicateUser.setPassword("otra-password");
+        // Usamos el email que hemos creado en el BeforeEach para forzar el fallo
+        CreateUserDTO duplicateUser = new CreateUserDTO();
+        duplicateUser.setEmail("testlogin@deusto.es"); 
+        duplicateUser.setPassword("cualquier-password");
         duplicateUser.setNombre("Duplicado");
+        duplicateUser.setApellidos("Prueba");
+        duplicateUser.setRole(CreateUserDTO.Role.ESTUDIANTE);
 
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
