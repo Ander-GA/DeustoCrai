@@ -1,7 +1,12 @@
 package es.deusto.spq.deustocrai.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,11 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import es.deusto.spq.deustocrai.dao.*;
-import es.deusto.spq.deustocrai.entity.*;
-import java.util.List;
-import java.util.Optional;
-import java.time.LocalDateTime;
+import es.deusto.spq.deustocrai.dao.AulaRepository;
+import es.deusto.spq.deustocrai.dao.LibroRepository;
+import es.deusto.spq.deustocrai.dao.PrestamoRepository;
+import es.deusto.spq.deustocrai.dao.ReservaRepository;
+import es.deusto.spq.deustocrai.dao.UserRepository;
+import es.deusto.spq.deustocrai.entity.Aula;
+import es.deusto.spq.deustocrai.entity.Libro;
+import es.deusto.spq.deustocrai.entity.Reserva;
+import es.deusto.spq.deustocrai.entity.User;
 
 @SpringBootTest
 @Transactional // Limpia la base de datos automáticamente después de cada test
@@ -49,13 +58,17 @@ public class ServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() {
-        // Limpiamos datos para evitar conflictos de integridad referencial
-        reservaRepository.deleteAll();
-        prestamoRepository.deleteAll();
-        libroRepository.deleteAll();
-        userRepository.deleteAll();
-
-        // 1. Creamos y guardamos un usuario real para los tests
+        // EL ORDEN ES CRUCIAL: Borramos de lo más específico a lo más general
+        // para evitar fallos de claves foráneas (Foreign Keys)
+        reservaRepository.deleteAll();     // 1. Borrar reservas (dependen de User y Aula)
+        prestamoRepository.deleteAll();    // 2. Borrar préstamos (dependen de User y Libro)
+        
+        // Ahora que no hay dependencias, podemos borrar lo demás
+        libroRepository.deleteAll();       // 3. Borrar libros
+        aulaRepository.deleteAll();        // 4. Borrar aulas
+        userRepository.deleteAll();        // 5. Borrar usuarios
+        
+        // Volvemos a crear los datos limpios para el test
         usuarioTest = new User();
         usuarioTest.setEmail("integracion.test@deusto.es");
         usuarioTest.setNombre("Usuario");
@@ -64,15 +77,13 @@ public class ServiceIntegrationTest {
         usuarioTest.setRole(User.Role.ESTUDIANTE);
         usuarioTest = userRepository.save(usuarioTest);
 
-        // 2. Creamos un libro real
         libroTest = new Libro("Clean Code Integracion", "978-0132350884", "Robert C. Martin");
         libroTest.setDisponible(true);
         libroTest = libroRepository.save(libroTest);
         
-        // 3. Creamos un aula real
         aulaTest = new Aula("Aula Integracion 01", 10, true);
         aulaTest = aulaRepository.save(aulaTest);
-    }
+    }       
 
     @Test
     @DisplayName("Integración: Ciclo completo de añadir libro y verificar su persistencia")
