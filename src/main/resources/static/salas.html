@@ -113,7 +113,7 @@
     </main>
 
     <script>
-        let fechaReferencia = new Date("2026-03-23");
+        let fechaReferencia = new Date();
         let salaActual = null;
         let usuarioActual = null;
         const days = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
@@ -149,6 +149,15 @@
 
         function abrirCalendarioSala(id, nombre, capacidad) {
             salaActual = { id, nombre, capacidad };
+			
+			const hoy = new Date();
+			const anio = hoy.getFullYear();
+			const mes = String(hoy.getMonth() + 1).padStart(2, '0'); // Añade el 0 si es mes 1-9
+			const dia = String(hoy.getDate()).padStart(2, '0');      // Añade el 0 si es día 1-9
+			const fechaFormateada = `${anio}-${mes}-${dia}`;
+			    
+			document.getElementById('reserva-fecha').value = fechaFormateada;
+				
             document.getElementById('selector-sala-container').style.display = 'none';
             document.getElementById('sidebar-reserva').style.display = 'block'; 
             document.getElementById('panel-calendario').style.display = 'flex'; 
