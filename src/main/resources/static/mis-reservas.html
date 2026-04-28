@@ -22,61 +22,56 @@
        
 		
 		async function cargarReservas() {
-		            const token = localStorage.getItem('token');
-		            if (!token) return;
+		    const token = localStorage.getItem('token');
+		    
+		    // Si no hay token, pedimos inicio de sesión
+		    if (!token) {
+		        document.getElementById('lista-reservas').innerHTML = "<p>Inicia sesión para ver tus reservas.</p>";
+		        return;
+		    }
 
-		            try {
-		                // 1. Obtener datos del usuario logueado
-		                const userResp = await fetch('/auth/me', { headers: { 'Authorization': token } });
-		                const user = await userResp.json();
-
-		                // Si la sesión caducó o el usuario no tiene ID (caché antigua), forzamos login
-		                if (!userResp.ok || !user.id) {
-		                    localStorage.removeItem('token');
-		                    alert("Tu sesión necesita actualizarse. Por favor, vuelve a iniciar sesión.");
-		                    window.location.href = "login.html";
-		                    return;
-		                }
-
-						// 2. Llamar al endpoint (AÑADIENDO EL TOKEN)
-						const response = await fetch(`/api/salas/usuario/${user.id}`, {
-						headers: { 'Authorization': token }
-						});
-						                
-						// Si el servidor falla, lanzamos el error antes de romper el JSON
-						if (!response.ok) throw new Error("Error del servidor");
-
-		                const reservas = await response.json();
-		                const container = document.getElementById('lista-reservas');
-		                
-		                if (reservas.length === 0) {
-		                    container.innerHTML = "<p>No tienes reservas realizadas.</p>";
-		                    return;
-		                }
-
-						// 3. Mostrar la lista con protección contra nulos
-						 container.innerHTML = reservas.map(r => {
-						     let f = r.fechaHoraInicio;
-						     if (!f) return ''; // Si la reserva no tiene fecha (corrupta), la ignora
-						                    
-							 let dateObj = Array.isArray(f) 
-							     ? new Date(f[0], f[1]-1, f[2], f[3], f[4]||0) 
-							     : new Date(f);						                    
-						     // Protegemos por si se guardó una reserva sin aula en las pruebas
-						     let nombreSala = r.aula ? r.aula.nombre : "Sala eliminada/desconocida";
-						                    
-						     return `
-						       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-						            <strong>Sala:</strong> ${nombreSala} <br>
-						            <strong>Fecha:</strong> ${dateObj.toLocaleDateString()} <br>
-						            <strong>Horario:</strong> ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-						       </div>`;
-						}).join('');
-		            } catch (error) {
-		                console.error("Error:", error);
-		                document.getElementById('lista-reservas').innerHTML = "<p>Error al cargar las reservas.</p>";
-		            }
+		    try {
+		        // 1. Petición DIRECTA a las reservas usando el token en la cabecera
+		        const response = await fetch('/api/salas/mis-reservas', {
+		            headers: { 'Authorization': token }
+		        });
+		                        
+		        // Si el servidor da error (Ej: 401 Unauthorized), forzamos login
+		        if (!response.ok) {
+		            localStorage.removeItem('token');
+		            alert("Tu sesión ha caducado. Vuelve a iniciar sesión.");
+		            window.location.href = "login.html";
+		            return;
 		        }
+
+		        const reservas = await response.json();
+		        const container = document.getElementById('lista-reservas');
+		        
+		        // Si la lista está vacía
+		        if (reservas.length === 0) {
+		            container.innerHTML = "<p>No tienes reservas realizadas.</p>";
+		            return;
+		        }
+
+		        // 2. Pintar la lista de reservas
+		        container.innerHTML = '';
+		        reservas.forEach(r => {
+		             // Convertimos directamente la fecha a un objeto Date (igual que en los libros)
+		             let dateObj = new Date(r.fechaHoraInicio);						                    
+		             let nombreSala = r.aula ? r.aula.nombre : "Sala eliminada/desconocida";
+		                            
+		             container.innerHTML += `
+		               <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+		                    <strong>Sala:</strong> ${nombreSala} <br>
+		                    <strong>Fecha:</strong> ${dateObj.toLocaleDateString()} <br>
+		                    <strong>Horario:</strong> ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+		               </div>`;
+		        });
+		    } catch (error) {
+		        console.error("Error:", error);
+		        document.getElementById('lista-reservas').innerHTML = "<p>Error al cargar las reservas. Verifica tu conexión.</p>";
+		    }
+		}
 		
 		
 				document.addEventListener('DOMContentLoaded', () => {

@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
+import es.deusto.spq.deustocrai.entity.User;
+import es.deusto.spq.deustocrai.service.AuthService;
 @RestController
 @RequestMapping("/api/salas")
 public class AulaController {
@@ -26,7 +27,10 @@ public class AulaController {
 
     @Autowired
     private ReservaRepository reservaRepository;
-
+    
+    @Autowired
+    private AuthService authService;
+    
     @GetMapping
     public List<Aula> listarSalas() {
         return aulaRepository.findAll();
@@ -56,4 +60,22 @@ public class AulaController {
     public List<Reserva> consultarReservas(@PathVariable Long id) {
         return reservaRepository.findByAulaId(id);
     }
+    
+    @GetMapping("/mis-reservas")
+    public ResponseEntity<List<Reserva>> misReservas(@RequestHeader("Authorization") String token) {
+        User user = authService.getEmpleadoByToken(token);
+        
+        // Si el token no es válido o ha expirado, devolvemos un 401
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
+        // Buscamos las reservas que le pertenecen
+        List<Reserva> misReservas = reservaRepository.findAll().stream()
+                .filter(r -> r.getUsuario() != null && r.getUsuario().getId().equals(user.getId()))
+                .collect(Collectors.toList());
+                
+        return ResponseEntity.ok(misReservas);
+    }
+
 }
