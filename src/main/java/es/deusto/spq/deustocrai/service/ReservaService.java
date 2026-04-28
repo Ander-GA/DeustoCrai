@@ -2,8 +2,11 @@ package es.deusto.spq.deustocrai.service;
 
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Reserva;
+import es.deusto.spq.deustocrai.entity.User;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,9 +16,11 @@ import java.util.Optional;
 public class ReservaService {
 
     private final ReservaRepository reservaRepository;
+    private final es.deusto.spq.deustocrai.dao.UserRepository userRepository; 
 
-    public ReservaService(ReservaRepository reservaRepository) {
+    public ReservaService(ReservaRepository reservaRepository, es.deusto.spq.deustocrai.dao.UserRepository userRepository) {
         this.reservaRepository = reservaRepository;
+        this.userRepository = userRepository;
     }
 
     public List<Reserva> getReservasPorAula(Long aulaId) {
@@ -95,9 +100,7 @@ public class ReservaService {
         return Optional.of(reservaRepository.save(reservaActual));
     }
     
- // Importa si no lo tienes: import java.util.Optional; import java.time.LocalDateTime;
-    // import org.springframework.transaction.annotation.Transactional;
-
+ 
     @Transactional
     public Optional<Reserva> devolverSalaEarly(Long id, Long usuarioId) {
         Optional<Reserva> optReserva = reservaRepository.findById(id);
@@ -112,6 +115,28 @@ public class ReservaService {
 
         // Simplemente actualizamos la hora de FIN a "ahora mismo"
         reserva.setFechaHoraFin(LocalDateTime.now());
+        reserva.setDevuelta(true);
         return Optional.of(reservaRepository.save(reserva));
+    }
+    
+    
+    
+    @Scheduled(fixedRate = 10000) // Se ejecuta cada 10 segundos automáticamente
+    @Transactional
+    public void aplicarPenalizacionesAutomaticas() {
+        // Buscamos todas las reservas que ya pasaron de hora y no pulsaron "Devolver"
+        List<Reserva> expiradas = reservaRepository.findByDevueltaFalseAndFechaHoraFinBefore(LocalDateTime.now());
+
+        for (Reserva r : expiradas) {
+            User u = r.getUsuario();
+            if (u != null && !u.isBloqueado()) {
+                u.setBloqueado(true);
+                u.setFechaFinPenalizacion(LocalDateTime.now().plusSeconds(30)); // Castigo de 30 segundos
+                userRepository.save(u);
+            }
+            // La marcamos como devuelta a la fuerza para no volver a castigarle en el siguiente ciclo
+            r.setDevuelta(true);
+            reservaRepository.save(r);
+        }
     }
 }

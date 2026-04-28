@@ -42,6 +42,11 @@ public class User {
     @Column(nullable = false)
     private Role role;
     
+    @Column(nullable = false)
+    private boolean bloqueado = false;
+    
+    private java.time.LocalDateTime fechaFinPenalizacion;
+    
     public User() {}
     
     public User(String nombre, String apellidos, String password, String email, Role role) {
@@ -75,6 +80,11 @@ public class User {
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     
+    public boolean isBloqueado() { return bloqueado; }
+    public void setBloqueado(boolean bloqueado) { this.bloqueado = bloqueado; }
+    
+    public java.time.LocalDateTime getFechaFinPenalizacion() { return fechaFinPenalizacion; }
+    public void setFechaFinPenalizacion(java.time.LocalDateTime fechaFinPenalizacion) { this.fechaFinPenalizacion = fechaFinPenalizacion; }
     @Override
     public int hashCode() { return Objects.hash(email); }
 
