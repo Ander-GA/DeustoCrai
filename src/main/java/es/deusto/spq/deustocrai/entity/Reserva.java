@@ -28,6 +28,9 @@ public class Reserva {
 
     @Column(nullable = false)
     private LocalDateTime fechaHoraFin;
+    
+    @Column(nullable = false)
+    private boolean devuelta = false;
 
     public Reserva() {}
 
@@ -48,4 +51,7 @@ public class Reserva {
     public void setFechaHoraInicio(LocalDateTime fechaHoraInicio) { this.fechaHoraInicio = fechaHoraInicio; }
     public LocalDateTime getFechaHoraFin() { return fechaHoraFin; }
     public void setFechaHoraFin(LocalDateTime fechaHoraFin) { this.fechaHoraFin = fechaHoraFin; }
+    
+    public boolean isDevuelta() { return devuelta; }
+    public void setDevuelta(boolean devuelta) { this.devuelta = devuelta; }
 }

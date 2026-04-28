@@ -12,5 +12,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
     @Query("SELECT r FROM Reserva r WHERE r.fechaHoraFin > CURRENT_TIMESTAMP")
     List<Reserva> findReservasActivas();
+ // Busca reservas cuya fecha fin ya pasó y NO han sido devueltas
+    List<Reserva> findByDevueltaFalseAndFechaHoraFinBefore(java.time.LocalDateTime fechaHora);
 }
 

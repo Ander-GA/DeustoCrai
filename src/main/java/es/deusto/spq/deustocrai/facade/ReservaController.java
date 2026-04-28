@@ -91,4 +91,18 @@ public class ReservaController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("No se puede extender: la sala está ocupada en ese horario.");
         }
     }
+    
+    @PutMapping("/{id}/devolver")
+    public ResponseEntity<?> devolverSala(@PathVariable("id") Long id, @RequestHeader("Authorization") String token) {
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Sesión inválida.");
+
+        Optional<Reserva> actualizada = reservaService.devolverSalaEarly(id, user.getId());
+        
+        if (actualizada.isPresent()) {
+            return ResponseEntity.ok(actualizada.get());
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No se pudo devolver la sala (reserva inválida o no te pertenece).");
+        }
+    }
 }
