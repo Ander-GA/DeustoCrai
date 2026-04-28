@@ -1,21 +1,21 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.0'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.4.0'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'es.deusto.spq.deustocrai'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+description = 'DeustoCrai Project - Sprint 2'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
@@ -27,41 +27,33 @@ dependencies {
     
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    
+    // --- DEPENDENCIAS DE TEST (CRUCIALES PARA EL SPRINT 2) ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.hamcrest:hamcrest:2.2'
+    
+    // ContiPerf y JUnit 4 (Para los tests de rendimiento)
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.databene:contiperf:2.3.4'
+    
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
-	// Tarea para ejecutar SOLO los tests unitarios
+    useJUnitPlatform()
+}
+
+// Tareas separadas para organizar tus tests en el pipeline
 task testUnitario(type: Test) {
-    useJUnitPlatform {
-        includeTags 'Unitario'
-    }
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
+    useJUnitPlatform { includeTags 'Unitario' }
 }
 
-// Tarea para ejecutar SOLO los tests de integración
 task testIntegracion(type: Test) {
-    useJUnitPlatform {
-        includeTags 'Integracion'
-    }
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
+    useJUnitPlatform { includeTags 'Integracion' }
 }
 
-// Tarea para ejecutar SOLO los tests de rendimiento
 task testRendimiento(type: Test) {
-    useJUnitPlatform {
-        includeTags 'Rendimiento'
-    }
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
-}
+    dependsOn clean // Esto obliga a borrar lo viejo y crear carpetas nuevas
+    useJUnitPlatform { includeTags 'Rendimiento' }
 }
