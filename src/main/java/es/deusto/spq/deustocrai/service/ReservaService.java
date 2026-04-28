@@ -94,4 +94,24 @@ public class ReservaService {
         reservaActual.setFechaHoraFin(nuevaFechaFin);
         return Optional.of(reservaRepository.save(reservaActual));
     }
+    
+ // Importa si no lo tienes: import java.util.Optional; import java.time.LocalDateTime;
+    // import org.springframework.transaction.annotation.Transactional;
+
+    @Transactional
+    public Optional<Reserva> devolverSalaEarly(Long id, Long usuarioId) {
+        Optional<Reserva> optReserva = reservaRepository.findById(id);
+        
+        if (optReserva.isEmpty()) return Optional.empty();
+        Reserva reserva = optReserva.get();
+
+        // Comprobación defensiva de seguridad (¡CRÍTICO!)
+        if (reserva.getUsuario() == null || !reserva.getUsuario().getId().equals(usuarioId)) {
+            return Optional.empty();
+        }
+
+        // Simplemente actualizamos la hora de FIN a "ahora mismo"
+        reserva.setFechaHoraFin(LocalDateTime.now());
+        return Optional.of(reservaRepository.save(reserva));
+    }
 }

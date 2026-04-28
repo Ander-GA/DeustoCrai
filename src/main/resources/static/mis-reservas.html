@@ -19,116 +19,152 @@
 
     <script src="js/auth.js"></script>
     <script>
-       
-		
-		async function cargarReservas() {
-		    const token = localStorage.getItem('token');
-		    
-		    // Si no hay token, pedimos inicio de sesión
-		    if (!token) {
-		        document.getElementById('lista-reservas').innerHTML = "<p>Inicia sesión para ver tus reservas.</p>";
-		        return;
-		    }
+        // Función principal para cargar y mostrar las reservas
+        async function cargarReservas() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('lista-reservas').innerHTML = "<p>Inicia sesión para ver tus reservas.</p>";
+                return;
+            }
 
-		    try {
-		        // 1. Petición DIRECTA a las reservas usando el token en la cabecera
-		        const response = await fetch('/api/salas/mis-reservas', {
-		            headers: { 'Authorization': token }
-		        });
-		                        
-		        // Si el servidor da error (Ej: 401 Unauthorized), forzamos login
-		        if (!response.ok) {
-		            localStorage.removeItem('token');
-		            alert("Tu sesión ha caducado. Vuelve a iniciar sesión.");
-		            window.location.href = "login.html";
-		            return;
-		        }
+            try {
+                // Usamos el endpoint directo que gestiona el token en el servidor
+                const response = await fetch('/api/salas/mis-reservas', {
+                    headers: { 'Authorization': token }
+                });
+                                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem('token');
+                        alert("Tu sesión ha caducado. Por favor, vuelve a iniciar sesión.");
+                        window.location.href = "login.html";
+                    }
+                    throw new Error("Error del servidor al obtener reservas");
+                }
 
-		        const reservas = await response.json();
-		        const container = document.getElementById('lista-reservas');
-		        
-		        // Si la lista está vacía
-		        if (reservas.length === 0) {
-		            container.innerHTML = "<p>No tienes reservas realizadas.</p>";
-		            return;
-		        }
+                const reservas = await response.json();
+                const container = document.getElementById('lista-reservas');
+                
+                if (reservas.length === 0) {
+                    container.innerHTML = "<p>No tienes reservas realizadas.</p>";
+                    return;
+                }
 
-		        // 2. Pintar la lista de reservas
-		        container.innerHTML = '';
-		        reservas.forEach(r => {
-		             // Convertimos directamente la fecha a un objeto Date (igual que en los libros)
-		             let dateObj = new Date(r.fechaHoraInicio);						                    
-		             let nombreSala = r.aula ? r.aula.nombre : "Sala eliminada/desconocida";
-		                            
-					 container.innerHTML += `
-					    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #003366; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative;">
-					         <strong>Sala:</strong> ${nombreSala} <br>
-					         <strong>Fecha:</strong> ${dateObj.toLocaleDateString()} <br>
-					         <strong>Inicio:</strong> ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} <br>
-					         <strong>Fin:</strong> ${new Date(r.fechaHoraFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-					         
-					         <div style="margin-top: 15px; display: flex; gap: 10px;">
-					             <button onclick="extenderReserva(${r.id})" style="background: #003366; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">+ 30 Minutos</button>
-					             <button onclick="cancelarReserva(${r.id})" style="background: #d9534f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Cancelar</button>
-					         </div>
-					    </div>`;
-		        });
-		    } catch (error) {
-		        console.error("Error:", error);
-		        document.getElementById('lista-reservas').innerHTML = "<p>Error al cargar las reservas. Verifica tu conexión.</p>";
-		    }
-		}
-		
-		
-		
-		async function cancelarReserva(id) {
-		    if (!confirm("¿Seguro que quieres cancelar esta reserva?")) return;
-		    
-		    const token = localStorage.getItem('token');
-		    try {
-		        const response = await fetch(`/api/reservas/${id}`, {
-		            method: 'DELETE',
-		            headers: { 'Authorization': token }
-		        });
-		        
-		        if (response.ok) {
-		            alert("Reserva cancelada correctamente.");
-		            cargarReservas(); // Recargamos la lista
-		        } else {
-		            alert("No se pudo cancelar la reserva.");
-		        }
-		    } catch (e) {
-		        console.error(e);
-		        alert("Error de conexión.");
-		    }
-		}
+                container.innerHTML = ''; // Limpiar mensaje de carga
 
-		async function extenderReserva(id) {
-		    const token = localStorage.getItem('token');
-		    // Mandamos 30 minutos por defecto como parámetro
-		    try {
-		        const response = await fetch(`/api/reservas/${id}/extender?minutos=30`, {
-		            method: 'PUT',
-		            headers: { 'Authorization': token }
-		        });
-		        
-		        if (response.ok) {
-		            alert("¡Reserva extendida 30 minutos!");
-		            cargarReservas(); // Recargamos la lista para ver la nueva hora
-		        } else {
-		            const errorMsg = await response.text();
-		            alert("Atención: " + errorMsg);
-		        }
-		    } catch (e) {
-		        console.error(e);
-		        alert("Error de conexión al extender.");
-		    }
-		}
-		
-		
-				document.addEventListener('DOMContentLoaded', () => {
-				    setTimeout(cargarReservas, 500);
-				});
+                reservas.forEach(r => {
+                    // Procesar fechas (soporta formato Array de Spring Boot o String ISO)
+                    const fInicio = r.fechaHoraInicio;
+                    const fFin = r.fechaHoraFin;
+                    
+                    const start = Array.isArray(fInicio) 
+                        ? new Date(fInicio[0], fInicio[1]-1, fInicio[2], fInicio[3], fInicio[4]||0) 
+                        : new Date(fInicio);
+                    
+                    const end = Array.isArray(fFin) 
+                        ? new Date(fFin[0], fFin[1]-1, fFin[2], fFin[3], fFin[4]||0) 
+                        : new Date(fFin);
+
+                    const nombreSala = r.aula ? r.aula.nombre : "Sala desconocida";
+                    
+                    // Lógica para el botón "Devolver"
+                    const ahora = new Date();
+                    const estaEnLaSala = ahora >= start && ahora < end;
+
+                    const estiloDevolver = estaEnLaSala
+                        ? "background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;"
+                        : "background: #e0e0e0; color: #a0a0a0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: not-allowed; font-weight: bold;";
+
+                    container.innerHTML += `
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #003366; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="margin-bottom: 10px;">
+                                <strong style="font-size: 1.1em; color: #003366;">${nombreSala}</strong><br>
+                                <strong>Fecha:</strong> ${start.toLocaleDateString()} <br>
+                                <strong>Horario:</strong> ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <button onclick="extenderReserva(${r.id})" style="background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">
+                                    <i class="fas fa-plus"></i> +30 min
+                                </button>
+                                
+                                <button onclick="devolverSala(${r.id})" ${estaEnLaSala ? '' : 'disabled'} style="${estiloDevolver}">
+                                    Devolver Sala
+                                </button>
+
+                                <button onclick="cancelarReserva(${r.id})" style="background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>`;
+                });
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById('lista-reservas').innerHTML = "<p>Error al conectar con el servidor.</p>";
+            }
+        }
+
+        // Acción: Extender reserva
+        async function extenderReserva(id) {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`/api/reservas/${id}/extender?minutos=30`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': token }
+                });
+                
+                if (response.ok) {
+                    alert("Reserva extendida 30 minutos.");
+                    cargarReservas();
+                } else {
+                    const msg = await response.text();
+                    alert("No se pudo extender: " + msg);
+                }
+            } catch (e) { alert("Error de conexión."); }
+        }
+
+        // Acción: Devolver sala (Finalizar antes)
+        async function devolverSala(id) {
+            if (!confirm("¿Deseas finalizar tu estancia y liberar la sala ahora?")) return;
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`/api/reservas/${id}/devolver`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': token }
+                });
+                
+                if (response.ok) {
+                    alert("Sala devuelta. ¡Gracias!");
+                    cargarReservas();
+                } else {
+                    alert("Error al devolver la sala.");
+                }
+            } catch (e) { alert("Error de conexión."); }
+        }
+
+        // Acción: Cancelar reserva
+        async function cancelarReserva(id) {
+            if (!confirm("¿Seguro que quieres cancelar esta reserva?")) return;
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`/api/reservas/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': token }
+                });
+                
+                if (response.ok) {
+                    alert("Reserva cancelada con éxito.");
+                    cargarReservas();
+                } else {
+                    alert("No se pudo cancelar la reserva.");
+                }
+            } catch (e) { alert("Error de conexión."); }
+        }
+
+        // Iniciar carga al entrar
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(cargarReservas, 400);
+        });
     </script>
 </body>
 </html>
