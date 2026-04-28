@@ -19,28 +19,16 @@
 
     <script src="js/auth.js"></script>
     <script>
-        // Función principal para cargar y mostrar las reservas
         async function cargarReservas() {
             const token = localStorage.getItem('token');
-            if (!token) {
-                document.getElementById('lista-reservas').innerHTML = "<p>Inicia sesión para ver tus reservas.</p>";
-                return;
-            }
+            if (!token) return;
 
             try {
-                // Usamos el endpoint directo que gestiona el token en el servidor
                 const response = await fetch('/api/salas/mis-reservas', {
                     headers: { 'Authorization': token }
                 });
                                 
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        localStorage.removeItem('token');
-                        alert("Tu sesión ha caducado. Por favor, vuelve a iniciar sesión.");
-                        window.location.href = "login.html";
-                    }
-                    throw new Error("Error del servidor al obtener reservas");
-                }
+                if (!response.ok) throw new Error("Error del servidor");
 
                 const reservas = await response.json();
                 const container = document.getElementById('lista-reservas');
@@ -50,10 +38,9 @@
                     return;
                 }
 
-                container.innerHTML = ''; // Limpiar mensaje de carga
+                container.innerHTML = ''; 
 
                 reservas.forEach(r => {
-                    // Procesar fechas (soporta formato Array de Spring Boot o String ISO)
                     const fInicio = r.fechaHoraInicio;
                     const fFin = r.fechaHoraFin;
                     
@@ -67,104 +54,68 @@
 
                     const nombreSala = r.aula ? r.aula.nombre : "Sala desconocida";
                     
-                    // Lógica para el botón "Devolver"
+                    // --- LÓGICA CORREGIDA ---
                     const ahora = new Date();
-                    const estaEnLaSala = ahora >= start && ahora < end;
+                    // El botón estará azul si la reserva aún no ha terminado (independientemente de si ha empezado)
+                    const puedeDevolver = ahora < end;
 
-                    const estiloDevolver = estaEnLaSala
-                        ? "background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;"
-                        : "background: #e0e0e0; color: #a0a0a0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: not-allowed; font-weight: bold;";
+                    const estiloDevolver = puedeDevolver
+                        ? "background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;"
+                        : "background: #e0e0e0; color: #a0a0a0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: not-allowed;";
 
                     container.innerHTML += `
                         <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #003366; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            <div style="margin-bottom: 10px;">
-                                <strong style="font-size: 1.1em; color: #003366;">${nombreSala}</strong><br>
-                                <strong>Fecha:</strong> ${start.toLocaleDateString()} <br>
-                                <strong>Horario:</strong> ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </div>
+                            <strong style="font-size: 1.1em; color: #003366;">${nombreSala}</strong><br>
+                            <strong>Fecha:</strong> ${start.toLocaleDateString()} <br>
+                            <strong>Horario:</strong> ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             
                             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                                <button onclick="extenderReserva(${r.id})" style="background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">
-                                    <i class="fas fa-plus"></i> +30 min
-                                </button>
+                                <button onclick="extenderReserva(${r.id})" style="background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">+30 min</button>
                                 
-                                <button onclick="devolverSala(${r.id})" ${estaEnLaSala ? '' : 'disabled'} style="${estiloDevolver}">
+                                <button onclick="devolverSala(${r.id})" ${puedeDevolver ? '' : 'disabled'} style="${estiloDevolver}">
                                     Devolver Sala
                                 </button>
 
-                                <button onclick="cancelarReserva(${r.id})" style="background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">
-                                    Cancelar
-                                </button>
+                                <button onclick="cancelarReserva(${r.id})" style="background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">Cancelar</button>
                             </div>
                         </div>`;
                 });
             } catch (error) {
-                console.error("Error:", error);
-                document.getElementById('lista-reservas').innerHTML = "<p>Error al conectar con el servidor.</p>";
+                document.getElementById('lista-reservas').innerHTML = "<p>Error al cargar las reservas.</p>";
             }
         }
 
-        // Acción: Extender reserva
+        async function devolverSala(id) {
+            if (!confirm("¿Deseas liberar la sala ahora?")) return;
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/reservas/${id}/devolver`, {
+                method: 'PUT',
+                headers: { 'Authorization': token }
+            });
+            if (response.ok) { alert("Sala devuelta."); cargarReservas(); }
+        }
+
         async function extenderReserva(id) {
             const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`/api/reservas/${id}/extender?minutos=30`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': token }
-                });
-                
-                if (response.ok) {
-                    alert("Reserva extendida 30 minutos.");
-                    cargarReservas();
-                } else {
-                    const msg = await response.text();
-                    alert("No se pudo extender: " + msg);
-                }
-            } catch (e) { alert("Error de conexión."); }
+            const response = await fetch(`/api/reservas/${id}/extender?minutos=30`, {
+                method: 'PUT',
+                headers: { 'Authorization': token }
+            });
+            if (response.ok) { alert("Extendida 30 min."); cargarReservas(); }
+            else { alert("No se puede extender: sala ocupada."); }
         }
 
-        // Acción: Devolver sala (Finalizar antes)
-        async function devolverSala(id) {
-            if (!confirm("¿Deseas finalizar tu estancia y liberar la sala ahora?")) return;
-            const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`/api/reservas/${id}/devolver`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': token }
-                });
-                
-                if (response.ok) {
-                    alert("Sala devuelta. ¡Gracias!");
-                    cargarReservas();
-                } else {
-                    alert("Error al devolver la sala.");
-                }
-            } catch (e) { alert("Error de conexión."); }
-        }
-
-        // Acción: Cancelar reserva
         async function cancelarReserva(id) {
-            if (!confirm("¿Seguro que quieres cancelar esta reserva?")) return;
+            if (!confirm("¿Cancelar reserva?")) return;
             const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`/api/reservas/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': token }
-                });
-                
-                if (response.ok) {
-                    alert("Reserva cancelada con éxito.");
-                    cargarReservas();
-                } else {
-                    alert("No se pudo cancelar la reserva.");
-                }
-            } catch (e) { alert("Error de conexión."); }
+            const response = await fetch(`/api/reservas/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+            });
+            if (response.ok) { alert("Cancelada."); cargarReservas(); }
         }
 
-        // Iniciar carga al entrar
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(cargarReservas, 400);
-        });
+        document.addEventListener('DOMContentLoaded', () => setTimeout(cargarReservas, 400));
     </script>
 </body>
 </html>
