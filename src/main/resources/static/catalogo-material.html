@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Catálogo de Material - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>Ñ
+        .container { max-width: 800px; margin: 40px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .material-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ddd; }
+        .disponible { color: #28a745; font-weight: bold; }
+        .no-disponible { color: #dc3545; font-weight: bold; }
+        .btn-prestar { background-color: var(--azul-deusto); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <main class="container">
+        <h2>Catálogo de Material Técnico</h2>
+        <p>Reserva portátiles, cámaras y otros dispositivos para tu estudio.</p>
+        <hr style="margin-bottom: 20px;">
+        
+        <div id="lista-materiales">
+            <p style="text-align: center;">Cargando materiales...</p>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        async function cargarMateriales() {
+            try {
+                // El endpoint ya existe en MaterialController
+                const response = await fetch('/api/materiales');
+                const materiales = await response.json();
+                const lista = document.getElementById('lista-materiales');
+                
+                if (materiales.length === 0) {
+                    lista.innerHTML = '<p>No hay material disponible actualmente.</p>';
+                    return;
+                }
+
+                lista.innerHTML = ''; 
+                materiales.forEach(m => {
+                    const estado = m.disponible 
+                        ? '<span class="disponible">✔ Disponible</span>' 
+                        : '<span class="no-disponible">✖ En préstamo</span>';
+                    
+                    const btnAccion = m.disponible 
+                        ? `<button class="btn-prestar" onclick="prestarMaterial(${m.id})">Reservar</button>` 
+                        : `<button disabled style="background:#ccc; cursor:not-allowed;">No disponible</button>`;
+
+                    lista.innerHTML += `
+                        <div class="material-item">
+                            <div>
+                                <a href="detalle-material.html?id=${m.id}"><strong>${m.titulo}</strong></a><br>
+                                <small>Tipo: ${m.tipo} | S/N: ${m.numeroSerie}</small>
+                                <div style="margin-top:5px;">${estado}</div>
+                            </div>
+                            <div>${btnAccion}</div>
+                        </div>`;
+                });
+            } catch (e) {
+                console.error(e);
+                document.getElementById('lista-materiales').innerHTML = '<p>Error al conectar con el servidor.</p>';
+            }
+        }
+
+        async function prestarMaterial(id) {
+            const token = localStorage.getItem('token');
+            if(!token) { alert("Debes iniciar sesión."); return; }
+
+            const response = await fetch(`/api/prestamos/prestar-material/${id}`, {
+                method: 'POST',
+                headers: { 'Authorization': token }
+            });
+
+            if(response.ok) {
+                alert("Material reservado con éxito.");
+                cargarMateriales();
+            } else {
+                alert("No se pudo reservar el material.");
+            }
+        }
+
+        window.onload = () => setTimeout(cargarMateriales, 300);
+    </script>
+</body>
+</html>
