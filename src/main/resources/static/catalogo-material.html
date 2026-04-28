@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Catálogo de Material - DeustoCrai</title>
     <link rel="stylesheet" href="css/style.css">
-    <style>Ñ
+    <style>
         .container { max-width: 800px; margin: 40px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .material-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ddd; }
         .disponible { color: #28a745; font-weight: bold; }
@@ -24,11 +24,11 @@
         </div>
     </main>
 
-    <script src="js/auth.js"></script>
+<script src="js/auth.js"></script>
+
     <script>
         async function cargarMateriales() {
             try {
-                // El endpoint ya existe en MaterialController
                 const response = await fetch('/api/materiales');
                 const materiales = await response.json();
                 const lista = document.getElementById('lista-materiales');
@@ -64,24 +64,15 @@
             }
         }
 
-        async function prestarMaterial(id) {
-            const token = localStorage.getItem('token');
-            if(!token) { alert("Debes iniciar sesión."); return; }
-
-            const response = await fetch(`/api/prestamos/prestar-material/${id}`, {
-                method: 'POST',
-                headers: { 'Authorization': token }
-            });
-
-            if(response.ok) {
-                alert("Material reservado con éxito.");
-                cargarMateriales();
-            } else {
-                alert("No se pudo reservar el material.");
+        // ESTA PARTE ES LA CLAVE PARA QUE APAREZCA EL HEADER
+        window.onload = () => {
+            // Llamamos a la función init() que está dentro de auth.js para que cargue el header
+            if (typeof init === "function") {
+                init(); 
             }
-        }
-
-        window.onload = () => setTimeout(cargarMateriales, 300);
+            // Esperamos un pelín para cargar los materiales
+            setTimeout(cargarMateriales, 300);
+        };
     </script>
 </body>
 </html>
