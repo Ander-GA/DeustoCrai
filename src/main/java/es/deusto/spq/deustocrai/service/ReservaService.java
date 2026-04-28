@@ -101,19 +101,22 @@ public class ReservaService {
     }
     
  
+ // En ReservaService.java
     @Transactional
     public Optional<Reserva> devolverSalaEarly(Long id, Long usuarioId) {
         Optional<Reserva> optReserva = reservaRepository.findById(id);
-        
         if (optReserva.isEmpty()) return Optional.empty();
         Reserva reserva = optReserva.get();
 
-        // Comprobación defensiva de seguridad (¡CRÍTICO!)
+        // Validación extra: No permitir devolver si aún no ha empezado la reserva
+        if (LocalDateTime.now().isBefore(reserva.getFechaHoraInicio())) {
+            return Optional.empty(); 
+        }
+
         if (reserva.getUsuario() == null || !reserva.getUsuario().getId().equals(usuarioId)) {
             return Optional.empty();
         }
 
-        // Simplemente actualizamos la hora de FIN a "ahora mismo"
         reserva.setFechaHoraFin(LocalDateTime.now());
         reserva.setDevuelta(true);
         return Optional.of(reservaRepository.save(reserva));

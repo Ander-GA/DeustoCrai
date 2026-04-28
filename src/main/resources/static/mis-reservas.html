@@ -54,12 +54,12 @@
 
                     const nombreSala = r.aula ? r.aula.nombre : "Sala desconocida";
                     
-                    // --- LÓGICA CORREGIDA ---
+                    // --- LÓGICA DE ACTIVACIÓN POR HORA ACTUAL ---
                     const ahora = new Date();
-                    // El botón estará azul si la reserva aún no ha terminado (independientemente de si ha empezado)
-                    const puedeDevolver = ahora < end;
+                    // El botón solo se habilita si la hora actual está entre el inicio y el fin de la reserva
+                    const estaEnLaSala = ahora >= start && ahora < end;
 
-                    const estiloDevolver = puedeDevolver
+                    const estiloDevolver = estaEnLaSala
                         ? "background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;"
                         : "background: #e0e0e0; color: #a0a0a0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: not-allowed;";
 
@@ -72,7 +72,7 @@
                             <div style="display: flex; gap: 10px; margin-top: 15px;">
                                 <button onclick="extenderReserva(${r.id})" style="background: #003366; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">+30 min</button>
                                 
-                                <button onclick="devolverSala(${r.id})" ${puedeDevolver ? '' : 'disabled'} style="${estiloDevolver}">
+                                <button onclick="devolverSala(${r.id})" ${estaEnLaSala ? '' : 'disabled'} style="${estiloDevolver}">
                                     Devolver Sala
                                 </button>
 
