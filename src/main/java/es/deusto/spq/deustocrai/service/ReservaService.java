@@ -4,6 +4,7 @@ import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +41,8 @@ public class ReservaService {
     public List<Reserva> obtenerReservasActivas() {
         return reservaRepository.findReservasActivas();
     }
-    
+
+    // --- MÉTODOS DE CANCELAR Y EXTENDER CON SEGURIDAD ---
 
     @Transactional
     public boolean cancelarReserva(Long id, Long usuarioId) {
@@ -48,7 +50,6 @@ public class ReservaService {
         
         if (optReserva.isPresent()) {
             Reserva reserva = optReserva.get();
-            // Comprobación defensiva: Evita el error si el usuario de la DB es nulo
             if (reserva.getUsuario() != null && reserva.getUsuario().getId().equals(usuarioId)) {
                 reservaRepository.deleteById(id);
                 return true;
@@ -67,19 +68,16 @@ public class ReservaService {
 
         Reserva reservaActual = optReserva.get();
 
-        // Validar de forma segura que la reserva es del usuario
         if (reservaActual.getUsuario() == null || !reservaActual.getUsuario().getId().equals(usuarioId)) {
             return Optional.empty();
         }
 
-        // ¡AQUÍ ESTABA EL ERROR 500! Si la sala fue borrada misteriosamente, evitamos el colapso
         if (reservaActual.getAula() == null) {
             return Optional.empty();
         }
 
         LocalDateTime nuevaFechaFin = reservaActual.getFechaHoraFin().plusMinutes(minutosExtra);
 
-        // Comprobamos si hay conflicto
         List<Reserva> existentes = reservaRepository.findByAulaId(reservaActual.getAula().getId());
         
         boolean conflicto = existentes.stream()

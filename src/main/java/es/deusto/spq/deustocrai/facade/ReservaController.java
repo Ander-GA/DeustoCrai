@@ -2,10 +2,8 @@ package es.deusto.spq.deustocrai.facade;
 
 import es.deusto.spq.deustocrai.entity.Reserva;
 import es.deusto.spq.deustocrai.entity.User;
-import es.deusto.spq.deustocrai.service.AuthService;
 import es.deusto.spq.deustocrai.service.ReservaService;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import es.deusto.spq.deustocrai.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,25 +17,23 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/reservas")
 public class ReservaController {
-	
-	
 
     private final ReservaService reservaService;
+    private final AuthService authService; // ¡Inyectado de forma segura!
 
-    @Autowired
-    private AuthService authService;
-    
-    public ReservaController(ReservaService reservaService) {
+    // Constructor único: Spring inyecta ambos servicios automáticamente sin que fallen
+    public ReservaController(ReservaService reservaService, AuthService authService) {
         this.reservaService = reservaService;
+        this.authService = authService;
     }
 
     @GetMapping("/aula/{aulaId}")
-    public List<Reserva> listarPorAula(@PathVariable Long aulaId) {
+    public List<Reserva> listarPorAula(@PathVariable("aulaId") Long aulaId) {
         return reservaService.getReservasPorAula(aulaId);
     }
     
     @GetMapping("/eventos/{aulaId}")
-    public List<Map<String, Object>> obtenerEventosCalendario(@PathVariable Long aulaId) {
+    public List<Map<String, Object>> obtenerEventosCalendario(@PathVariable("aulaId") Long aulaId) {
         List<Reserva> reservas = reservaService.getReservasPorAula(aulaId);
         return reservas.stream().map(res -> {
             Map<String, Object> evento = new HashMap<>();
@@ -45,7 +41,7 @@ public class ReservaController {
             evento.put("title", "Ocupado");
             evento.put("start", res.getFechaHoraInicio());
             evento.put("end", res.getFechaHoraFin());
-            evento.put("color", "#d9534f"); // Rojo para ocupado
+            evento.put("color", "#d9534f"); 
             return evento;
         }).collect(Collectors.toList());
     }
@@ -54,17 +50,18 @@ public class ReservaController {
     public ResponseEntity<?> crearReserva(@RequestBody Reserva reserva) {
         return reservaService.realizarReserva(reserva)
             .map(r -> new ResponseEntity<>(r, HttpStatus.CREATED))
-            .orElseGet(() -> new ResponseEntity<>(HttpStatus.CONFLICT)); // 409 si está ocupada
+            .orElseGet(() -> new ResponseEntity<>(HttpStatus.CONFLICT));
     }
     
     @GetMapping("/activas")
     public ResponseEntity<List<Reserva>> obtenerReservasActivas() {
-        // Al ser salas ocupadas, podría ser un dato público o requerir token según tus reglas de negocio
         return ResponseEntity.ok(reservaService.obtenerReservasActivas());
     }
-    
+
+    // --- MÉTODOS DE CANCELAR Y EXTENDER ---
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> cancelarReserva(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> cancelarReserva(@PathVariable("id") Long id, @RequestHeader("Authorization") String token) {
         User user = authService.getEmpleadoByToken(token);
         if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Sesión inválida.");
 
@@ -79,8 +76,8 @@ public class ReservaController {
 
     @PutMapping("/{id}/extender")
     public ResponseEntity<?> extenderReserva(
-            @PathVariable Long id, 
-            @RequestParam int minutos, 
+            @PathVariable("id") Long id, 
+            @RequestParam("minutos") int minutos, 
             @RequestHeader("Authorization") String token) {
             
         User user = authService.getEmpleadoByToken(token);
@@ -91,8 +88,7 @@ public class ReservaController {
         if (actualizada.isPresent()) {
             return ResponseEntity.ok(actualizada.get());
         } else {
-            // Mandamos un mensaje claro al frontend
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("No se puede extender: la sala está ocupada en ese horario o hay un error de datos.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("No se puede extender: la sala está ocupada en ese horario.");
         }
     }
 }
