@@ -36,6 +36,29 @@ public class PrestamoController {
         
         return ResponseEntity.ok(prestamoService.obtenerPrestamosPorUsuario(user));
     }
+    
+    @Operation(summary = "Ver historial de préstamos pasados", description = "Lista todos los préstamos que ya han sido devueltos por el estudiante.")
+    @GetMapping("/mi-historial") // Veo en tu error que lo has llamado así
+    public ResponseEntity<?> historialPrestamos(
+            // Añadimos el "truco" de Swagger
+            @Parameter(in = ParameterIn.HEADER, name = "Token-Auth", required = true, description = "Pega aquí tu Token")
+            @RequestHeader(value = "Token-Auth", required = false) String tokenSwagger,
+            @RequestHeader(value = "Authorization", required = false) String tokenReal) {
+        
+        // Filtro de prioridad de tokens
+        String token = (tokenReal != null && !tokenReal.isEmpty()) ? tokenReal : tokenSwagger;
+
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se ha recibido el token de autenticación.");
+        }
+
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o sesión caducada.");
+        }
+        
+        return ResponseEntity.ok(prestamoService.obtenerHistorialPorUsuario(user));
+    }
 
     @PostMapping("/prestar/{libroId}")
     public ResponseEntity<?> prestarLibro(@RequestHeader("Authorization") String token, @PathVariable("libroId") Long libroId) {

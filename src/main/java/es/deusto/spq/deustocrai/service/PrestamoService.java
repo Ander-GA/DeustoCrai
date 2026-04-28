@@ -29,6 +29,13 @@ public class PrestamoService {
 				.filter(prestamo -> prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO)
 				.toList();
     }
+    
+    public List<Prestamo> obtenerHistorialPorUsuario(User usuario) {
+        return prestamoRepository.findByUsuarioIdAndEstado(
+            usuario.getId(),
+            Prestamo.EstadoPrestamo.DEVUELTO
+        );
+    }
 
     // NUEVO MÉTODO PARA EL BIBLIOTECARIO: Obtener todos los préstamos del sistema
     public List<Prestamo> obtenerTodosLosPrestamos() {
