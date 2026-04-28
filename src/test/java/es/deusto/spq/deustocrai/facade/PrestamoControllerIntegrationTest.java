@@ -11,7 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
 import es.deusto.spq.deustocrai.entity.Prestamo;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Integracion")
 @SpringBootTest
 @AutoConfigureMockMvc
 public class PrestamoControllerIntegrationTest {

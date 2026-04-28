@@ -15,7 +15,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import es.deusto.spq.deustocrai.entity.Material;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @SpringBootTest
 @AutoConfigureMockMvc
 public class MaterialControllerTest {

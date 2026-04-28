@@ -18,7 +18,9 @@ import com.jayway.jsonpath.JsonPath;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.deusto.spq.deustocrai.entity.Libro;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @SpringBootTest
 @AutoConfigureMockMvc
 public class LibroControllerTest {

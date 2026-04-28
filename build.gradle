@@ -35,4 +35,33 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Tarea para ejecutar SOLO los tests unitarios
+task testUnitario(type: Test) {
+    useJUnitPlatform {
+        includeTags 'Unitario'
+    }
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Tarea para ejecutar SOLO los tests de integración
+task testIntegracion(type: Test) {
+    useJUnitPlatform {
+        includeTags 'Integracion'
+    }
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Tarea para ejecutar SOLO los tests de rendimiento
+task testRendimiento(type: Test) {
+    useJUnitPlatform {
+        includeTags 'Rendimiento'
+    }
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
 }

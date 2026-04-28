@@ -20,7 +20,9 @@ import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import es.deusto.spq.deustocrai.entity.User;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @ExtendWith(MockitoExtension.class)
 @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 public class ReservaServiceTest {

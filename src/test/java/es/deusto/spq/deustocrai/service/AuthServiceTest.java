@@ -15,7 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.User;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
 

@@ -17,7 +17,9 @@ import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.entity.Prestamo;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @ExtendWith(MockitoExtension.class)
 public class PrestamoServiceTest {
 

@@ -17,7 +17,9 @@ import org.springframework.util.StopWatch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Rendimiento")
 @SpringBootTest
 @AutoConfigureMockMvc
 public class PrestamoControllerPerformanceTest {

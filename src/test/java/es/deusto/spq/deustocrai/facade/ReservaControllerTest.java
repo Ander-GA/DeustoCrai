@@ -20,7 +20,9 @@ import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.User;
 import es.deusto.spq.deustocrai.dao.AulaRepository;
 import es.deusto.spq.deustocrai.dao.UserRepository;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional 

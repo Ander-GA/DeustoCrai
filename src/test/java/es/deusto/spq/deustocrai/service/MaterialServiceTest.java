@@ -17,7 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.deusto.spq.deustocrai.dao.MaterialRepository;
 import es.deusto.spq.deustocrai.entity.Material;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @ExtendWith(MockitoExtension.class)
 public class MaterialServiceTest {
 

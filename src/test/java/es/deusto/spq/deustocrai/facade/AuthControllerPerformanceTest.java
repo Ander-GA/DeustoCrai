@@ -18,7 +18,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
 import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.User;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Rendimiento")
 @SpringBootTest
 @AutoConfigureMockMvc
 public class AuthControllerPerformanceTest {

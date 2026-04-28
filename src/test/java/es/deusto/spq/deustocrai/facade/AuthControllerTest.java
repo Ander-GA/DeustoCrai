@@ -19,7 +19,9 @@ import es.deusto.spq.deustocrai.dto.CredentialsDTO;
 import es.deusto.spq.deustocrai.dto.CreateUserDTO;
 import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.User;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Unitario")
 @SpringBootTest
 @AutoConfigureMockMvc
 public class AuthControllerTest {
