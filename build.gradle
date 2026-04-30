@@ -75,16 +75,30 @@ jacocoTestReport {
 
 // TAREAS PERSONALIZADAS (Organización del Sprint 2)
 task testUnitario(type: Test) {
+	// 1. Apuntamos a la carpeta de tests genérica
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform { includeTags 'Unitario' }
     finalizedBy jacocoTestReport
 }
 
 task testIntegracion(type: Test) {
+    // 1. Apuntamos a la carpeta de tests genérica
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    
+    // 2. Filtramos por la etiqueta
     useJUnitPlatform { includeTags 'Integracion' }
     finalizedBy jacocoTestReport
 }
 
 task testRendimiento(type: Test) {
     dependsOn clean
+    
+    // 1. Apuntamos a la carpeta de tests genérica
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    
+    // 2. Filtramos por la etiqueta
     useJUnitPlatform { includeTags 'Rendimiento' }
 }

@@ -2,6 +2,7 @@ package es.deusto.spq.deustocrai.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,9 @@ import es.deusto.spq.deustocrai.entity.*;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
+import org.junit.jupiter.api.Tag;
 
+@Tag("Integracion")
 @SpringBootTest
 @Transactional // Limpia la base de datos automáticamente después de cada test
 public class ServiceIntegrationTest {
