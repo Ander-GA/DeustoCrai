@@ -101,4 +101,5 @@ task testRendimiento(type: Test) {
     
     // 2. Filtramos por la etiqueta
     useJUnitPlatform { includeTags 'Rendimiento' }
+    testLogging.showStandardStreams = true
 }
