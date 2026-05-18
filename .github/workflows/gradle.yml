@@ -1,3 +1,4 @@
+# Este flujo de trabajo construye el proyecto con Gradle y ejecuta todos los tests organizados por carpetas físicas
 name: Java CI with Gradle
 
 on:
@@ -12,8 +13,6 @@ jobs:
     permissions:
       contents: write
 
-    # -------- CAMBIO 1: Añadimos la base de datos MySQL temporal --------
-    # Los servicios van aquí, antes de la palabra "steps:"
     services:
       mysql:
         image: mysql:8.0
@@ -29,9 +28,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
-    # ---------------------------------------------------------------------
 
-    # Aquí empieza tu ÚNICO bloque de pasos
     steps:
     - uses: actions/checkout@v4
     
@@ -42,30 +39,27 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      uses: gradle/actions/setup-gradle@v4
 
-    # -------- CAMBIO 2: Damos permisos de ejecución al Wrapper --------
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    # ------------------------------------------------------------------
 
-    - name: Build with Gradle Wrapper
-      run: ./gradlew build
+    # 1. Ejecución de Tests Unitarios (Carpeta src/test)
+    - name: Run Unit Tests
+      run: ./gradlew test
 
-  # Este es el segundo Job (El que da avisos de seguridad)
-  dependency-submission:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    # 2. Ejecución de Tests de Integración (Carpeta src/integrationTest)
+    - name: Run Integration Tests
+      run: ./gradlew integrationTest
 
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+    # 3. Ejecución de Tests de Rendimiento (Carpeta src/performanceTest)
+    - name: Run Performance Tests
+      run: ./gradlew performanceTest
 
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+    # 4. Generación del informe de cobertura (JaCoCo)
+    - name: Generate Coverage Report
+      run: ./gradlew jacocoTestReport
+
+    # 5. Construcción del JAR final (solo si los tests pasan)
+    - name: Build with Gradle
+      run: ./gradlew build -x test -x integrationTest -x performanceTest
