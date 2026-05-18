@@ -63,3 +63,8 @@ jobs:
     # 5. Construcción del JAR final (solo si los tests pasan)
     - name: Build with Gradle
       run: ./gradlew build -x test -x integrationTest -x performanceTest
+	  
+	- name: Setup Gradle
+	    uses: gradle/actions/setup-gradle@v4
+        with:
+          dependency-graph: generate-and-submit
