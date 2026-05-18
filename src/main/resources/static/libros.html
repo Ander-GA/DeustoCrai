@@ -60,9 +60,9 @@
                         : '<span class="no-disponible" style="color: red;">✖ En préstamo</span>';
                     
                     
-                    const btnPrestar = libro.disponible 
-                        ? `<button class="btn-accion btn-prestar" onclick="prestarLibro(${libro.id})">Reservar Libro</button>` 
-                        : `<button class="btn-accion" style="background-color: #ccc; cursor: not-allowed;" disabled>No Disponible</button>`;
+                    const btnPrestar = libro.disponible
+                        ? `<button class="btn-accion btn-prestar" onclick="prestarLibro(${libro.id})">Reservar Libro</button>`
+                        : `<button class="btn-accion btn-cola" onclick="apuntarseCola(${libro.id})">Apuntarme a la cola</button>`;
                     
                     lista.innerHTML += `
                         <div class="libro-item">
@@ -108,6 +108,45 @@
                 }
             } catch (e) {
                 console.error("Error en la reserva:", e);
+            }
+        }
+
+        async function apuntarseCola(id) {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                alert("Debes iniciar sesión primero para apuntarte a la cola.");
+                window.location.href = "login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/cola-espera/recurso/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Token-Auth': token
+                    }
+                });
+
+                if (response.ok) {
+                    const cola = await response.json();
+
+                    alert(
+                        "Te has apuntado correctamente a la cola de espera.\n\n" +
+                        "Estado: " + cola.estado + "\n" +
+                        "Recurso: " + cola.recurso.titulo
+                    );
+
+                    cargarLibros();
+                } else {
+                    const error = await response.text();
+                    alert("No se ha podido apuntar a la cola:\n" + error);
+                }
+
+            } catch (e) {
+                console.error("Error al apuntarse a la cola:", e);
+                alert("Error al conectar con el servidor.");
             }
         }
 

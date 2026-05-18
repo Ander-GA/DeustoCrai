@@ -3,6 +3,9 @@ package es.deusto.spq.deustocrai.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +20,8 @@ import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.entity.Prestamo;
+import es.deusto.spq.deustocrai.entity.User;
+
 import org.junit.jupiter.api.Tag;
 
 @Tag("Unitario")
@@ -70,4 +75,40 @@ public class PrestamoServiceTest {
         assertTrue(libro.isDisponible()); // El libro vuelve a estar disponible
         verify(libroRepository, times(1)).save(libro); // Se debe guardar el libro actualizado
     }
+    
+    @Test
+    @DisplayName("obtenerEstadisticasUsuario: Debe calcular correctamente usando Map")
+    void testObtenerEstadisticasUsuario() {
+        User usuarioPrueba = new User();
+        usuarioPrueba.setId(1L);
+
+        // Préstamo 1: Activo
+        Prestamo p1 = new Prestamo();
+        p1.setEstado(Prestamo.EstadoPrestamo.PENDIENTE_ENTREGA);
+
+        // Préstamo 2: Devuelto A TIEMPO
+        Prestamo p2 = new Prestamo();
+        p2.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
+        p2.setFechaDevolucionReal(LocalDate.now().minusDays(1)); // Lo devolvió ayer
+        p2.setFechaDevolucionPrevista(LocalDate.now()); // Tenía que devolverlo hoy
+
+        // Préstamo 3: Devuelto CON RETRASO
+        Prestamo p3 = new Prestamo();
+        p3.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
+        p3.setFechaDevolucionReal(LocalDate.now()); // Lo ha devuelto hoy
+        p3.setFechaDevolucionPrevista(LocalDate.now().minusDays(1)); // Tenía que devolverlo ayer
+
+        // Simulamos la respuesta de la base de datos
+        when(prestamoRepository.findByUsuarioId(1L)).thenReturn(Arrays.asList(p1, p2, p3));
+
+        // Ejecutamos el servicio
+        Map<String, Integer> stats = prestamoService.obtenerEstadisticasUsuario(usuarioPrueba);
+
+        // Verificamos que los números en el diccionario coinciden
+        assertEquals(3, stats.get("totalPrestamos"));
+        assertEquals(1, stats.get("prestamosActivos"));
+        assertEquals(1, stats.get("devueltosATiempo"));
+        assertEquals(1, stats.get("devueltosConRetraso"));
+    }
+     
 }

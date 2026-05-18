@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('perfil-apellidos').textContent = user.apellidos || 'No disponible';
             document.getElementById('perfil-email').textContent = user.email || 'No disponible';
             document.getElementById('perfil-rol').textContent = user.role || 'No disponible';
+			
+			cargarEstadisticas(token); // Cargar estadísticas de préstamos	
         } else {
             // Si el token es inválido o ha expirado, forzamos cierre de sesión
             cerrarSesion(); 
@@ -32,3 +34,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         cerrarSesion();
     }
 });
+
+async function cargarEstadisticas(token) {
+    try {
+        const response = await fetch('/api/prestamos/mis-estadisticas', {
+            headers: { 'Authorization': token }
+        });
+        if (response.ok) {
+            const stats = await response.json();
+            document.getElementById('stat-total').textContent = stats.totalPrestamos || 0;
+            document.getElementById('stat-activos').textContent = stats.prestamosActivos || 0;
+            document.getElementById('stat-tiempo').textContent = stats.devueltosATiempo || 0;
+            document.getElementById('stat-retraso').textContent = stats.devueltosConRetraso || 0;
+        }
+    } catch (e) {
+        console.error("Error al cargar estadísticas", e);
+    }
+}

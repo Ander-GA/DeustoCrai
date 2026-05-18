@@ -3,20 +3,23 @@ package es.deusto.spq.deustocrai.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank; // Para validar que no esté vacío
 
 @Entity
 @Table(name = "libro")
 public class Libro extends AbstractRecurso {
 
-    // El ISBN no puede ser nulo y además debe ser único (no puede haber dos libros con el mismo ISBN en el catálogo)
+    //@NotBlank(message = "El ISBN es obligatorio")
     @Column(nullable = false, unique = true)
     private String isbn;
 
-    // El autor no puede dejarse en blanco
+    //@NotBlank(message = "El autor es obligatorio")
     @Column(nullable = false)
     private String autor;
 
-    public Libro() {}
+    public Libro() {
+        super();
+    }
 
     public Libro(String titulo, String isbn, String autor) {
         super(titulo); 

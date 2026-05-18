@@ -16,9 +16,13 @@ public class MaterialController {
     @Autowired
     private MaterialRepository materialRepository;
 
-    // 1. Listar todos los materiales (Lo usa catalogo-material.html)
+    // 1. Listar todos los materiales 
+
     @GetMapping
-    public List<Material> listar() {
+    public List<Material> listar(@RequestParam(required = false) String buscar) {
+        if (buscar != null && !buscar.isEmpty()) {
+        return materialRepository.findByTituloContainingIgnoreCase(buscar);
+        }
         return materialRepository.findAll();
     }
 

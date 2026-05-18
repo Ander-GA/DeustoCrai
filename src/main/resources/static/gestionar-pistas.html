@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprobar Pistas - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .tabla-pistas { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        .tabla-pistas th, .tabla-pistas td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        .tabla-pistas th { background-color: #004b87; color: white; }
+        .btn-accion { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; margin: 0 5px; }
+        .btn-aceptar { background-color: #5cb85c; }
+        .btn-rechazar { background-color: #d9534f; }
+        .btn-volver { display: inline-block; margin-bottom: 15px; text-decoration: none; color: #004b87; font-weight: bold;}
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="container" style="max-width: 900px; margin: 40px auto;">
+        <a href="panel-bibliotecario.html" class="btn-volver">← Volver al Panel</a>
+        <h2>Solicitudes de Pistas Pendientes</h2>
+        
+        <table class="tabla-pistas">
+            <thead>
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Instalación</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-pistas">
+                <tr><td colspan="5">Cargando solicitudes...</td></tr>
+            </tbody>
+        </table>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        async function cargarPendientes() {
+            const token = localStorage.getItem('token');
+            const tbody = document.getElementById('tbody-pistas');
+
+            try {
+                const response = await fetch('/api/deportes/pendientes', {
+                    headers: { 'Authorization': token }
+                });
+
+                if (response.ok) {
+                    const reservas = await response.json();
+                    tbody.innerHTML = '';
+                    
+                    if (reservas.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5">No hay solicitudes pendientes.</td></tr>';
+                        return;
+                    }
+
+                    reservas.forEach(r => {
+                        // Extraer fechas de forma legible
+                        const fechaInicio = r.fechaHoraInicio.replace('T', ' ').substring(0, 16);
+                        const fechaFin = r.fechaHoraFin.replace('T', ' ').substring(0, 16);
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>${r.usuario.email}</td>
+                                <td><strong>${r.instalacion.nombre}</strong></td>
+                                <td>${fechaInicio}</td>
+                                <td>${fechaFin}</td>
+                                <td>
+                                    <button class="btn-accion btn-aceptar" onclick="procesar(${r.id}, 'APROBADA')">Aceptar</button>
+                                    <button class="btn-accion btn-rechazar" onclick="procesar(${r.id}, 'RECHAZADA')">Rechazar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5">Acceso denegado o error.</td></tr>';
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="5">Error de conexión.</td></tr>';
+            }
+        }
+
+        async function procesar(id, estado) {
+            if(!confirm(`¿Seguro que quieres ${estado} esta solicitud?`)) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`/api/deportes/procesar/${id}?estado=${estado}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': token }
+                });
+                
+                if (response.ok) {
+                    cargarPendientes(); // Recargar la tabla si hay éxito
+                } else {
+                    alert("Hubo un error al procesar.");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Ejecutar al cargar
+        window.addEventListener('load', () => setTimeout(cargarPendientes, 300));
+    </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 package es.deusto.spq.deustocrai;
+import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
 
 import java.util.List;
 
@@ -18,6 +19,12 @@ import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
+import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
+
+// IMPORTAMOS LOS NUEVOS DAO Y ENTIDADES
+import es.deusto.spq.deustocrai.dao.InstalacionRepository; 
+import es.deusto.spq.deustocrai.dao.ReservaInstalacionRepository; // <-- NUEVO
+import es.deusto.spq.deustocrai.entity.InstalacionDeportiva;
 
 @Configuration
 public class DataInitializer {
@@ -26,22 +33,27 @@ public class DataInitializer {
 
     @Bean
     CommandLineRunner initData(
-    		
             UserRepository userRepository,
             AulaRepository aulaRepository,
             MaterialRepository materialRepository,
             LibroRepository libroRepository,
             ReservaRepository reservaRepository,
-            PrestamoRepository prestamoRepository) {
+            PrestamoRepository prestamoRepository,
+            InstalacionRepository instalacionRepository,
+            ReservaInstalacionRepository reservaInstalacionRepository,
+            ColaEsperaRepository colaEsperaRepository) { // <-- LO INYECTAMOS AQUÍ
 
         return args -> {
-            // 1. Limpiar datos previos para evitar duplicados al reiniciar
+            // 1. Limpiar datos previos en el orden correcto (primero los hijos, luego los padres)
+            reservaInstalacionRepository.deleteAll(); // <-- BORRAMOS LAS RESERVAS DE PISTAS PRIMERO
             prestamoRepository.deleteAll();
             reservaRepository.deleteAll();
-        	userRepository.deleteAll();
+            colaEsperaRepository.deleteAll();
+            userRepository.deleteAll();
             libroRepository.deleteAll();
             aulaRepository.deleteAll();
-            materialRepository.deleteAll(); // Limpiamos materiales
+            materialRepository.deleteAll(); 
+            instalacionRepository.deleteAll(); 
 
             // 2. Crear Usuarios
             User ander = new User();
@@ -93,7 +105,6 @@ public class DataInitializer {
             bibliotecario.setEmail("bibliotecario@deusto.es");
             bibliotecario.setRole(User.Role.BIBLIOTECARIO);
 
-            // Y modificar la línea de guardado:
             userRepository.saveAll(List.of(ander, inigo, emilio, gaizka, jacqueline, admin, bibliotecario));
             logger.info("Usuarios de DeustoCrai guardados!");
 
@@ -113,16 +124,14 @@ public class DataInitializer {
             aulaRepository.saveAll(List.of(sala1, sala2, sala3));
             logger.info("Salas del CRAI guardadas!");
 
-            // 4. Crear Materiales iniciales (Sugerencia de tu compañero)
+            // 4. Crear Materiales iniciales
             Material portatil = new Material("Portátil Dell Latitude", "SN-DELL-001", "Portatil");
             Material camara = new Material("Cámara Canon EOS", "SN-CAN-500", "Camara");
             
             materialRepository.saveAll(List.of(portatil, camara));
             logger.info("Materiales del CRAI guardados!");
             
-            logger.info(">> Inicialización de datos completada con éxito.");
-            
-            //Crear Libros para el catálogo
+            // 5. Crear Libros para el catálogo
             Libro libro1 = new Libro("Clean Code: A Handbook of Agile Software Craftsmanship", "978-0132350884", "Robert C. Martin");
             Libro libro2 = new Libro("Design Patterns: Elements of Reusable Object-Oriented Software", "978-0201633610", "Erich Gamma");
             Libro libro3 = new Libro("El Señor de los Anillos: La Comunidad del Anillo", "978-8445071409", "J.R.R. Tolkien");
@@ -130,6 +139,15 @@ public class DataInitializer {
             libroRepository.saveAll(List.of(libro1, libro2, libro3));
             logger.info("Libros del catálogo guardados!");
             
+            // 6. CREAR INSTALACIONES DEPORTIVAS
+            InstalacionDeportiva p1 = new InstalacionDeportiva("Pista Pádel 1", "PADEL");
+            InstalacionDeportiva p2 = new InstalacionDeportiva("Pista Pádel 2", "PADEL");
+            InstalacionDeportiva p3 = new InstalacionDeportiva("Pista Pádel 3", "PADEL");
+            InstalacionDeportiva futbol = new InstalacionDeportiva("Campo de Fútbol", "FUTBOL");
+            
+            instalacionRepository.saveAll(List.of(p1, p2, p3, futbol));
+            logger.info("Instalaciones deportivas guardadas!");
+
             logger.info(">> Inicialización de datos completada con éxito.");
         };
     }
