@@ -19,60 +19,7 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    
-    // Documentación API (Swagger UI)
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
-    
-    // --- DEPENDENCIAS DE TEST ---
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.hamcrest:hamcrest:2.2'
-    
-    // ContiPerf y JUnit 4 (Para los tests de rendimiento)
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.databene:contiperf:2.3.4'
-}
-
-// CONFIGURACIÓN DE JACOCO
-jacoco {
-    toolVersion = "0.8.12" 
-}
-
-// Configuración de la tarea base de test
-tasks.named('test') {
-    useJUnitPlatform()
-    finalizedBy jacocoTestReport 
-}
-
-// Tarea para generar el reporte de cobertura
-jacocoTestReport {
-    dependsOn test 
-    reports {
-        xml.required = true
-        html.required = true
-        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
-    }
-    
-    // Excluimos DTOs y Entidades para que la estadística sea sobre la lógica (Servicios)
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                "es/deusto/spq/deustocrai/entity/**",
-                "es/deusto/spq/deustocrai/dto/**"
-            ])
-        }))
-    }
-}
-// --- CONFIGURACIÓN DE SOURCE SETS FÍSICOS (Según la tabla) ---
+// --- CONFIGURACIÓN DE SOURCE SETS FÍSICOS ---
 sourceSets {
     integrationTest {
         java {
@@ -92,7 +39,7 @@ sourceSets {
     }
 }
 
-// Hacemos que los nuevos Source Sets hereden las dependencias de "test"
+// Hacemos que los nuevos Source Sets hereden las dependencias de la carpeta principal de tests
 configurations {
     integrationTestImplementation.extendsFrom testImplementation
     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
@@ -100,15 +47,40 @@ configurations {
     performanceTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
-// --- TAREAS DE GRADLE (Según la tabla) ---
-tasks.named('test') {
-    useJUnitPlatform()
-    include '**/*Test.class'
-    exclude '**/*IT.class'
-    exclude '**/*PerfTest.class'
-    finalizedBy jacocoTestReport
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // Documentación API (Swagger UI)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+    
+    // --- DEPENDENCIAS DE TEST ---
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
 }
 
+// CONFIGURACIÓN DE JACOCO
+jacoco {
+    toolVersion = "0.8.12" 
+}
+
+
+// --- TAREAS DE GRADLE ---
+
+// 1. Tests Unitarios (Solo leerá de src/test/java)
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport 
+}
+
+// 2. Tests de Integración (Solo leerá de src/integrationTest/java)
 task integrationTest(type: Test) {
     description = 'Ejecuta los tests de integración.'
     group = 'verification'
@@ -117,21 +89,8 @@ task integrationTest(type: Test) {
     classpath = sourceSets.integrationTest.runtimeClasspath
     
     useJUnitPlatform()
-    include '**/*IT.class'
     shouldRunAfter test
 }
 
-task performanceTest(type: Test) {
-    description = 'Ejecuta los tests de rendimiento.'
-    group = 'verification'
-    
-    testClassesDirs = sourceSets.performanceTest.output.classesDirs
-    classpath = sourceSets.performanceTest.runtimeClasspath
-    
-    useJUnitPlatform()
-    include '**/*PerfTest.class'
-    shouldRunAfter integrationTest
-}
-
-// Hacemos que la tarea de validación general "check" ejecute todos los tests en orden
-check.dependsOn integrationTest, performanceTest
+// 3. Tests de Rendimiento (Solo leerá de src/performanceTest/java)
+task performanceTest(type
