@@ -1,4 +1,5 @@
 package es.deusto.spq.deustocrai;
+import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
 
 import java.util.List;
 
@@ -18,6 +19,7 @@ import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
+import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
 
 // IMPORTAMOS LOS NUEVOS DAO Y ENTIDADES
 import es.deusto.spq.deustocrai.dao.InstalacionRepository; 
@@ -38,13 +40,15 @@ public class DataInitializer {
             ReservaRepository reservaRepository,
             PrestamoRepository prestamoRepository,
             InstalacionRepository instalacionRepository,
-            ReservaInstalacionRepository reservaInstalacionRepository) { // <-- LO INYECTAMOS AQUÍ
+            ReservaInstalacionRepository reservaInstalacionRepository,
+            ColaEsperaRepository colaEsperaRepository) { // <-- LO INYECTAMOS AQUÍ
 
         return args -> {
             // 1. Limpiar datos previos en el orden correcto (primero los hijos, luego los padres)
             reservaInstalacionRepository.deleteAll(); // <-- BORRAMOS LAS RESERVAS DE PISTAS PRIMERO
             prestamoRepository.deleteAll();
             reservaRepository.deleteAll();
+            colaEsperaRepository.deleteAll();
             userRepository.deleteAll();
             libroRepository.deleteAll();
             aulaRepository.deleteAll();

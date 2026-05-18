@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Optional;
+import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/cola-espera")
@@ -18,10 +21,15 @@ public class ColaEsperaController {
     private final ColaEsperaService colaEsperaService;
     private final AuthService authService;
 
+    @Autowired
+    private ColaEsperaRepository colaEsperaRepository;
+
     public ColaEsperaController(ColaEsperaService colaEsperaService, AuthService authService) {
         this.colaEsperaService = colaEsperaService;
         this.authService = authService;
     }
+
+    
 
     @Operation(
             summary = "Apuntarse a la cola de espera",
@@ -63,5 +71,19 @@ public class ColaEsperaController {
     @GetMapping("/recurso/{recursoId}")
     public ResponseEntity<?> obtenerCola(@PathVariable Long recursoId) {
         return ResponseEntity.ok(colaEsperaService.obtenerColaActiva(recursoId));
+    }
+
+    @DeleteMapping("/{colaId}")
+    public ResponseEntity<?> salirDeLaCola(@PathVariable Long colaId) {
+
+        Optional<ColaEspera> colaOpt = colaEsperaRepository.findById(colaId);
+
+        if (colaOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        colaEsperaRepository.deleteById(colaId);
+
+        return ResponseEntity.ok("Has salido de la cola correctamente");
     }
 }

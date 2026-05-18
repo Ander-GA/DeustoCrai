@@ -327,3 +327,21 @@ body {
     font-size: 0.9rem;
     font-weight: bold;
 }
+
+/* --- BOTÓN COLA DE ESPERA --- */
+
+.btn-cola {
+    background-color: var(--naranja-deusto) !important;
+    color: white !important;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    transition: background-color 0.3s ease;
+}
+
+.btn-cola:hover {
+    background-color: #e68a00 !important;
+}
