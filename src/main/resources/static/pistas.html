@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reserva de Pistas - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .form-reserva { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .form-reserva label { font-weight: bold; margin-top: 15px; display: block; color: var(--azul-deusto); }
+        .form-reserva select, .form-reserva input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="container" style="max-width: 600px; margin: 40px auto;">
+        <h2>Solicitar Instalación Deportiva</h2>
+        <p>Recuerda: Máximo 6 días de antelación. Las solicitudes deben ser aprobadas por un bibliotecario.</p>
+        
+        <div class="form-reserva">
+            <form id="form-pista">
+                <label>Selecciona la Instalación:</label>
+                <select id="instalacion" required>
+                    <option value="">Cargando instalaciones...</option>
+                </select>
+
+                <label>Fecha del Partido:</label>
+                <input type="date" id="fecha" required>
+
+                <label>Hora de Inicio:</label>
+                <input type="time" id="hora" required>
+
+                <button type="submit" class="btn-primary" style="margin-top: 20px;">Enviar Solicitud</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Cargar instalaciones al entrar
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/deportes/instalaciones');
+                const instalaciones = await response.json();
+                const select = document.getElementById('instalacion');
+                select.innerHTML = '<option value="">-- Elige una pista --</option>';
+                instalaciones.forEach(inst => {
+                    select.innerHTML += `<option value="${inst.id}">${inst.nombre} (${inst.tipo})</option>`;
+                });
+            } catch (e) {
+                console.error("Error cargando instalaciones", e);
+            }
+        });
+
+        // Enviar la solicitud
+        document.getElementById('form-pista').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            if (!token) { alert("Debes iniciar sesión"); return; }
+
+            const instalacionId = document.getElementById('instalacion').value;
+            const fecha = document.getElementById('fecha').value;
+            const hora = document.getElementById('hora').value;
+
+            // Formateamos las fechas para Spring Boot (ISO 8601)
+            const inicioStr = `${fecha}T${hora}:00`;
+            
+            // Calculamos el fin (por defecto 1h y 30 mins de partido)
+            let finObj = new Date(inicioStr);
+            finObj.setMinutes(finObj.getMinutes() + 90);
+            
+            // Re-formatear a YYYY-MM-DDTHH:MM:00 local
+            const finStr = new Date(finObj.getTime() - (finObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 19);
+
+            const payload = {
+                instalacion: { id: instalacionId },
+                fechaHoraInicio: inicioStr,
+                fechaHoraFin: finStr
+            };
+
+            try {
+                const response = await fetch('/api/deportes/solicitar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(payload)
+                });
+
+                const msg = await response.text();
+                if (response.ok) {
+                    alert("✅ " + msg);
+                    window.location.href = 'index.html';
+                } else {
+                    alert("❌ Error: " + msg);
+                }
+            } catch (e) {
+                alert("Error de conexión al solicitar pista.");
+            }
+        });
+    </script>
+</body>
+</html>
