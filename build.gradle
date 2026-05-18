@@ -52,6 +52,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     
+    // Configuración de MySQL
     runtimeOnly 'com.mysql:mysql-connector-j'
     
     compileOnly 'org.projectlombok:lombok'
@@ -71,7 +72,6 @@ jacoco {
     toolVersion = "0.8.12" 
 }
 
-
 // --- TAREAS DE GRADLE ---
 
 // 1. Tests Unitarios (Solo leerá de src/test/java)
@@ -81,7 +81,7 @@ tasks.named('test') {
 }
 
 // 2. Tests de Integración (Solo leerá de src/integrationTest/java)
-task integrationTest(type: Test) {
+tasks.register('integrationTest', Test) {
     description = 'Ejecuta los tests de integración.'
     group = 'verification'
     
@@ -93,4 +93,38 @@ task integrationTest(type: Test) {
 }
 
 // 3. Tests de Rendimiento (Solo leerá de src/performanceTest/java)
-task performanceTest(type
+tasks.register('performanceTest', Test) {
+    description = 'Ejecuta los tests de rendimiento.'
+    group = 'verification'
+    
+    testClassesDirs = sourceSets.performanceTest.output.classesDirs
+    classpath = sourceSets.performanceTest.runtimeClasspath
+    
+    useJUnitPlatform()
+    shouldRunAfter integrationTest
+}
+
+// Tarea para generar el reporte de cobertura
+jacocoTestReport {
+    // Calculamos la cobertura sumando los unitarios y los de integración
+    dependsOn test, integrationTest 
+    
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+    
+    // Excluimos DTOs y Entidades para que la estadística sea sobre la lógica (Servicios y Controladores)
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                "es/deusto/spq/deustocrai/entity/**",
+                "es/deusto/spq/deustocrai/dto/**"
+            ])
+        }))
+    }
+}
+
+// Hacemos que la tarea de validación general "check" ejecute todos los tests en orden
+check.dependsOn integrationTest, performanceTest
