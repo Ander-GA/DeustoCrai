@@ -11,16 +11,19 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
+import es.deusto.spq.deustocrai.dao.BloqueoSalaRepository;
+import es.deusto.spq.deustocrai.entity.BloqueoSala;
 @Service
 public class ReservaService {
 
     private final ReservaRepository reservaRepository;
     private final es.deusto.spq.deustocrai.dao.UserRepository userRepository; 
-
-    public ReservaService(ReservaRepository reservaRepository, es.deusto.spq.deustocrai.dao.UserRepository userRepository) {
+    private final BloqueoSalaRepository bloqueoSalaRepository;
+    
+    public ReservaService(ReservaRepository reservaRepository, es.deusto.spq.deustocrai.dao.UserRepository userRepository, BloqueoSalaRepository bloqueoSalaRepository) {
         this.reservaRepository = reservaRepository;
         this.userRepository = userRepository;
+        this.bloqueoSalaRepository = bloqueoSalaRepository;
     }
 
     public List<Reserva> getReservasPorAula(Long aulaId) {
@@ -29,8 +32,20 @@ public class ReservaService {
 
     public Optional<Reserva> realizarReserva(Reserva nueva) {
         Long aulaId = nueva.getAula().getId(); 
-        List<Reserva> existentes = reservaRepository.findByAulaId(aulaId);
         
+        // 1. COMPROBAR BLOQUEOS DE LA SALA (NUEVO)
+        List<BloqueoSala> bloqueos = bloqueoSalaRepository.findByAulaId(aulaId);
+        boolean solapaConBloqueo = bloqueos.stream().anyMatch(b -> 
+            nueva.getFechaHoraInicio().isBefore(b.getFechaFin()) && 
+            b.getFechaInicio().isBefore(nueva.getFechaHoraFin())
+        );
+
+        if (solapaConBloqueo) {
+            return Optional.empty(); // La sala está bloqueada en ese horario
+        }
+
+        // 2. Comprobar reservas existentes (Tu código actual)
+        List<Reserva> existentes = reservaRepository.findByAulaId(aulaId);
         boolean conflicto = existentes.stream().anyMatch(r -> 
             nueva.getFechaHoraInicio().isBefore(r.getFechaHoraFin()) && 
             r.getFechaHoraInicio().isBefore(nueva.getFechaHoraFin())

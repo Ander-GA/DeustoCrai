@@ -18,6 +18,9 @@ import es.deusto.spq.deustocrai.service.AuthService;
 @RestController
 @RequestMapping("/api/salas")
 public class AulaController {
+	
+	@Autowired
+	private es.deusto.spq.deustocrai.dao.BloqueoSalaRepository bloqueoSalaRepository;
 
     @Autowired
     private ReservaService reservaService;
@@ -72,7 +75,7 @@ public class AulaController {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("La sala ya está reservada en esta franja horaria.");
         }
-    }
+    }	
 
     // Endpoint para obtener las reservas del usuario logueado (Punto 1)
     @GetMapping("/usuario/{usuarioId}")
@@ -102,6 +105,31 @@ public class AulaController {
                 .collect(Collectors.toList());
                 
         return ResponseEntity.ok(misReservas);
+    }
+    
+    @PostMapping("/{aulaId}/bloquear")
+    public ResponseEntity<?> bloquearSala(
+            @PathVariable Long aulaId,
+            @RequestBody es.deusto.spq.deustocrai.entity.BloqueoSala bloqueo,
+            @RequestHeader("Authorization") String token) {
+
+        User user = authService.getEmpleadoByToken(token);
+        
+        // Solo el bibliotecario o admin pueden bloquear salas
+        if (user == null || (user.getRole() != User.Role.BIBLIOTECARIO && user.getRole() != User.Role.ADMIN)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para bloquear salas.");
+        }
+
+        Optional<Aula> aulaOpt = aulaRepository.findById(aulaId);
+        if (aulaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Aula no encontrada.");
+        }
+
+        // Asignamos el aula al bloqueo y guardamos
+        bloqueo.setAula(aulaOpt.get());
+        bloqueoSalaRepository.save(bloqueo);
+
+        return ResponseEntity.ok("Sala bloqueada correctamente por motivo: " + bloqueo.getMotivo());
     }
 
 }
