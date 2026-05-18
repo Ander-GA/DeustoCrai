@@ -70,12 +70,10 @@ public class PrestamoService {
             if (prestamo.getUsuario().getId().equals(usuario.getId()) && prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
                 if (prestamo.getRecurso() instanceof Libro) {
 					Libro libro = (Libro) prestamo.getRecurso();
-					libro.setDisponible(true);
-					libroRepository.save(libro);
+					colaEsperaService.asignarPrimerUsuarioSiExiste(libro);
 				}else if(prestamo.getRecurso() instanceof Material) {
 					Material material = (Material) prestamo.getRecurso();
-					material.setDisponible(true);
-					materialRepository.save(material);
+					colaEsperaService.asignarPrimerUsuarioSiExiste(material);
 				}
                 prestamo.setFechaDevolucionReal(LocalDate.now());
 				prestamo.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
@@ -99,12 +97,10 @@ public class PrestamoService {
             	prestamo.setFechaDevolucionReal(LocalDate.now());
                 if (prestamo.getRecurso() instanceof Libro) {
                 	Libro libro = (Libro) prestamo.getRecurso();
-                	libro.setDisponible(true);
-                	libroRepository.save(libro);
+                	colaEsperaService.asignarPrimerUsuarioSiExiste(libro);
                 }else if(prestamo.getRecurso() instanceof Material) {
 					Material material = (Material) prestamo.getRecurso();
-					material.setDisponible(true);
-					materialRepository.save(material);
+					colaEsperaService.asignarPrimerUsuarioSiExiste(material);
 				}
             }
             
@@ -135,6 +131,9 @@ public class PrestamoService {
     public List<Prestamo> obtenerPrestamosLibrosActivos() {
         return prestamoRepository.findLibrosPrestadosActivos();
     }
+
+    @Autowired
+    private ColaEsperaService colaEsperaService;
     
     public Map<String, Integer> obtenerEstadisticasUsuario(User usuario) {
         List<Prestamo> prestamos = prestamoRepository.findByUsuarioId(usuario.getId());
