@@ -1,23 +1,23 @@
 package es.deusto.spq.deustocrai.facade;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.StopWatch;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import es.deusto.spq.deustocrai.dto.CredentialsDTO;
 import org.junit.jupiter.api.Tag;
+
+import es.deusto.spq.deustocrai.entity.User;
+import es.deusto.spq.deustocrai.service.AuthService;
 
 @Tag("Rendimiento")
 @SpringBootTest
@@ -27,31 +27,35 @@ public class PrestamoControllerPerformanceTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    // Simulamos la autenticación para que el test de rendimiento no dependa de la BD
+    @MockBean
+    private AuthService authService;
+
+    private String validAdminToken = "token-admin-rendimiento";
+
+    @BeforeEach
+    public void setUp() {
+        // Creamos un usuario BIBLIOTECARIO simulado (necesario para poder acceder a /todos)
+        User adminUser = new User();
+        adminUser.setId(1L);
+        adminUser.setEmail("biblioteca@deusto.es");
+        adminUser.setRole(User.Role.BIBLIOTECARIO);
+        
+        // Le decimos al mock que acepte nuestro token inventado
+        when(authService.getEmpleadoByToken(validAdminToken)).thenReturn(adminUser);
+    }
 
     @Test
     @DisplayName("Prueba de carga: 100 peticiones de listar préstamos en menos de 2 segundos")
     public void testRendimientoObtenerTodosLosPrestamos() throws Exception {
-        CredentialsDTO login = new CredentialsDTO();
-        login.setEmail("1");
-        login.setPassword("1");
-
-        MvcResult loginResult = mockMvc.perform(post("/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(login)))
-                .andExpect(status().isOk())
-                .andReturn();
-        
-        String token = loginResult.getResponse().getContentAsString();
-
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
         int numPeticiones = 100;
+        // Hacemos las 100 peticiones pasando directamente nuestro token simulado
         for (int i = 0; i < numPeticiones; i++) {
             mockMvc.perform(get("/api/prestamos/todos")
-                    .header("Authorization", token))
+                    .header("Authorization", validAdminToken))
                     .andExpect(status().isOk());
         }
 
@@ -63,6 +67,7 @@ public class PrestamoControllerPerformanceTest {
         System.out.println("Media por petición: " + (tiempoTotalMs / (double) numPeticiones) + " ms");
         System.out.println("======================================");
 
+        // Verificamos que tarda menos de 2 segundos (2000 ms)
         assertTrue(tiempoTotalMs < 2000, "El sistema fue demasiado lento. Tiempo: " + tiempoTotalMs + "ms");
     }
 }
