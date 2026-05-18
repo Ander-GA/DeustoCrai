@@ -42,9 +42,9 @@ dependencies {
     testImplementation 'org.databene:contiperf:2.3.4'
 }
 
-// CONFIGURACIÓN DE JACOCO (CORREGIDA)
+// CONFIGURACIÓN DE JACOCO
 jacoco {
-    toolVersion = "0.8.12" // Fíjate en la 'V' mayúscula
+    toolVersion = "0.8.12" 
 }
 
 // Configuración de la tarea base de test
@@ -72,34 +72,66 @@ jacocoTestReport {
         }))
     }
 }
+// --- CONFIGURACIÓN DE SOURCE SETS FÍSICOS (Según la tabla) ---
+sourceSets {
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integrationTest/java')
+        }
+        resources.srcDir file('src/integrationTest/resources')
+    }
+    performanceTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/performanceTest/java')
+        }
+        resources.srcDir file('src/performanceTest/resources')
+    }
+}
 
-// TAREAS PERSONALIZADAS (Organización del Sprint 2)
-task testUnitario(type: Test) {
-	// 1. Apuntamos a la carpeta de tests genérica
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-    useJUnitPlatform { includeTags 'Unitario' }
+// Hacemos que los nuevos Source Sets hereden las dependencias de "test"
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+    performanceTestImplementation.extendsFrom testImplementation
+    performanceTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+// --- TAREAS DE GRADLE (Según la tabla) ---
+tasks.named('test') {
+    useJUnitPlatform()
+    include '**/*Test.class'
+    exclude '**/*IT.class'
+    exclude '**/*PerfTest.class'
     finalizedBy jacocoTestReport
 }
 
-task testIntegracion(type: Test) {
-    // 1. Apuntamos a la carpeta de tests genérica
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
+task integrationTest(type: Test) {
+    description = 'Ejecuta los tests de integración.'
+    group = 'verification'
     
-    // 2. Filtramos por la etiqueta
-    useJUnitPlatform { includeTags 'Integracion' }
-    finalizedBy jacocoTestReport
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    
+    useJUnitPlatform()
+    include '**/*IT.class'
+    shouldRunAfter test
 }
 
-task testRendimiento(type: Test) {
-    dependsOn clean
+task performanceTest(type: Test) {
+    description = 'Ejecuta los tests de rendimiento.'
+    group = 'verification'
     
-    // 1. Apuntamos a la carpeta de tests genérica
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
+    testClassesDirs = sourceSets.performanceTest.output.classesDirs
+    classpath = sourceSets.performanceTest.runtimeClasspath
     
-    // 2. Filtramos por la etiqueta
-    useJUnitPlatform { includeTags 'Rendimiento' }
-    testLogging.showStandardStreams = true
+    useJUnitPlatform()
+    include '**/*PerfTest.class'
+    shouldRunAfter integrationTest
 }
+
+// Hacemos que la tarea de validación general "check" ejecute todos los tests en orden
+check.dependsOn integrationTest, performanceTest
