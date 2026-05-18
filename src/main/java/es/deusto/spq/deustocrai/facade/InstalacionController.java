@@ -60,7 +60,7 @@ public class InstalacionController {
 
     // El bibliotecario acepta o rechaza
     @PutMapping("/procesar/{id}")
-    public ResponseEntity<?> procesar(@RequestHeader("Authorization") String token, @PathVariable Long id, @RequestParam("estado") ReservaInstalacion.EstadoReserva estado) {
+    public ResponseEntity<?> procesar(@RequestHeader("Authorization") String token, @PathVariable("id") Long id, @RequestParam("estado") ReservaInstalacion.EstadoReserva estado) {
         User user = authService.getEmpleadoByToken(token);
         if (user == null || user.getRole() != User.Role.BIBLIOTECARIO) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
