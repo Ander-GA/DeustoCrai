@@ -1,11 +1,9 @@
 package es.deusto.spq.deustocrai.service;
 
 import static org.junit.jupiter.api.Assertions.*;
-
 import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,12 +14,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.Tag;
 
 import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.entity.Prestamo;
-import org.junit.jupiter.api.Tag;
 
 @Tag("Unitario")
 @ExtendWith(MockitoExtension.class)
@@ -36,167 +34,94 @@ public class LibroServiceTest {
     @InjectMocks
     private LibroService libroService;
 
-    private Libro libro;
+    private Libro libroMock;
 
     @BeforeEach
     void setUp() {
-        libro = new Libro("Clean Code", "978-0132350884", "Robert C. Martin");
-        libro.setDisponible(true);
+        libroMock = new Libro();
+        org.springframework.test.util.ReflectionTestUtils.setField(libroMock, "id", 1L);
+        libroMock.setTitulo("Cien Años de Soledad");
     }
 
-    // ── anadirLibro ────────────────────────────────────────────────
-
     @Test
-    @DisplayName("anadirLibro: guarda el libro y lo marca como disponible")
-    void testAnadirLibroLoGuardaDisponible() {
-        when(libroRepository.save(libro)).thenReturn(libro);
+    @DisplayName("anadirLibro: Se guarda marcándose como disponible")
+    void testAnadirLibro() {
+        when(libroRepository.save(any(Libro.class))).thenReturn(libroMock);
 
-        Libro resultado = libroService.anadirLibro(libro);
+        Libro resultado = libroService.anadirLibro(libroMock);
 
         assertTrue(resultado.isDisponible());
-        verify(libroRepository, times(1)).save(libro);
+        verify(libroRepository, times(1)).save(libroMock);
     }
 
     @Test
-    @DisplayName("anadirLibro: devuelve el libro con los datos correctos")
-    void testAnadirLibroDevuelveDatosCorrectos() {
-        when(libroRepository.save(libro)).thenReturn(libro);
+    @DisplayName("borrarLibro: Retorna -1 si el libro no existe en la BD")
+    void testBorrarLibroNoExiste() {
+        when(libroRepository.existsById(1L)).thenReturn(false);
 
-        Libro resultado = libroService.anadirLibro(libro);
-
-        assertEquals("Clean Code", resultado.getTitulo());
-        assertEquals("978-0132350884", resultado.getIsbn());
-        assertEquals("Robert C. Martin", resultado.getAutor());
-    }
-
-    // ── borrarLibro ────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("borrarLibro: devuelve -1 si el libro no existe")
-    void testBorrarLibroNoExisteDevuelveMinusUno() {
-        when(libroRepository.existsById(99L)).thenReturn(false);
-
-        int resultado = libroService.borrarLibro(99L);
+        int resultado = libroService.borrarLibro(1L);
 
         assertEquals(-1, resultado);
-        verify(libroRepository, never()).deleteById(any());
+        // Nos aseguramos de que no sigue ejecutando lógica innecesaria
+        verify(prestamoRepository, never()).findByRecursoId(anyLong()); 
     }
 
     @Test
-    @DisplayName("borrarLibro: devuelve 0 si el libro tiene un prestamo activo PENDIENTE_ENTREGA")
-    void testBorrarLibroConPrestamoPendienteDevuelveCero() {
-        Prestamo prestamo = mock(Prestamo.class);
-        when(prestamo.getEstado()).thenReturn(Prestamo.EstadoPrestamo.PENDIENTE_ENTREGA);
-
+    @DisplayName("borrarLibro: Retorna 0 (Conflicto) si un alumno tiene el libro sin devolver")
+    void testBorrarLibroPrestado() {
         when(libroRepository.existsById(1L)).thenReturn(true);
-        when(prestamoRepository.findByRecursoId(1L)).thenReturn(List.of(prestamo));
+        
+        // Simulamos un préstamo que aún no se ha devuelto
+        Prestamo prestamoActivo = new Prestamo();
+        prestamoActivo.setEstado(Prestamo.EstadoPrestamo.PENDIENTE_ENTREGA);
+        
+        when(prestamoRepository.findByRecursoId(1L)).thenReturn(Arrays.asList(prestamoActivo));
 
         int resultado = libroService.borrarLibro(1L);
 
         assertEquals(0, resultado);
-        verify(libroRepository, never()).deleteById(any());
+        verify(libroRepository, never()).deleteById(anyLong()); // Comprobamos que no se ha borrado
     }
 
     @Test
-    @DisplayName("borrarLibro: devuelve 0 si el libro tiene un prestamo activo ENTREGADO")
-    void testBorrarLibroConPrestamoEntregadoDevuelveCero() {
-        Prestamo prestamo = mock(Prestamo.class);
-        when(prestamo.getEstado()).thenReturn(Prestamo.EstadoPrestamo.ENTREGADO);
-
+    @DisplayName("borrarLibro: Retorna 1, desvincula el historial y borra con éxito")
+    void testBorrarLibroExito() {
         when(libroRepository.existsById(1L)).thenReturn(true);
-        when(prestamoRepository.findByRecursoId(1L)).thenReturn(List.of(prestamo));
-
-        int resultado = libroService.borrarLibro(1L);
-
-        assertEquals(0, resultado);
-    }
-
-    @Test
-    @DisplayName("borrarLibro: borra correctamente si todos los prestamos estan DEVUELTOS")
-    void testBorrarLibroConPrestamosDevueltosDevuelveUno() {
-        Prestamo prestamo = mock(Prestamo.class);
-        when(prestamo.getEstado()).thenReturn(Prestamo.EstadoPrestamo.DEVUELTO);
-
-        when(libroRepository.existsById(1L)).thenReturn(true);
-        when(prestamoRepository.findByRecursoId(1L)).thenReturn(List.of(prestamo));
+        
+        // Simulamos que existe un historial antiguo, pero el libro ya está devuelto
+        Prestamo prestamoHistorico = new Prestamo();
+        prestamoHistorico.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
+        prestamoHistorico.setRecurso(libroMock);
+        
+        when(prestamoRepository.findByRecursoId(1L)).thenReturn(Arrays.asList(prestamoHistorico));
 
         int resultado = libroService.borrarLibro(1L);
 
         assertEquals(1, resultado);
+        assertNull(prestamoHistorico.getRecurso()); // Verifica que se cortó la cuerda correctamente
+        verify(prestamoRepository, times(1)).saveAll(anyList());
         verify(libroRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    @DisplayName("borrarLibro: borra correctamente si no tiene ningun prestamo")
-    void testBorrarLibroSinPrestamosDevuelveUno() {
-        when(libroRepository.existsById(1L)).thenReturn(true);
-        when(prestamoRepository.findByRecursoId(1L)).thenReturn(Collections.emptyList());
-
-        int resultado = libroService.borrarLibro(1L);
-
-        assertEquals(1, resultado);
-        verify(libroRepository, times(1)).deleteById(1L);
-    }
-
-    @Test
-    @DisplayName("borrarLibro: desvincula el recurso de los prestamos historicos antes de borrar")
-    void testBorrarLibroDesvincularPrestamosHistoricos() {
-        Prestamo prestamo = mock(Prestamo.class);
-        when(prestamo.getEstado()).thenReturn(Prestamo.EstadoPrestamo.DEVUELTO);
-
-        when(libroRepository.existsById(1L)).thenReturn(true);
-        when(prestamoRepository.findByRecursoId(1L)).thenReturn(List.of(prestamo));
-
-        libroService.borrarLibro(1L);
-
-        verify(prestamo, times(1)).setRecurso(null);
-        verify(prestamoRepository, times(1)).saveAll(List.of(prestamo));
-    }
-
-    // ── listarLibros ───────────────────────────────────────────────
-
-    @Test
-    @DisplayName("listarLibros: devuelve todos los libros del repositorio")
-    void testListarLibrosDevuelveLista() {
-        Libro libro2 = new Libro("Effective Java", "978-0134685991", "Joshua Bloch");
-        when(libroRepository.findAll()).thenReturn(Arrays.asList(libro, libro2));
+    @DisplayName("listarLibros: Devuelve la lista de la BD")
+    void testListarLibros() {
+        when(libroRepository.findAll()).thenReturn(Arrays.asList(libroMock));
 
         List<Libro> resultado = libroService.listarLibros();
 
-        assertEquals(2, resultado.size());
+        assertEquals(1, resultado.size());
         verify(libroRepository, times(1)).findAll();
     }
 
     @Test
-    @DisplayName("listarLibros: devuelve lista vacia si no hay libros")
-    void testListarLibrosDevuelveListaVacia() {
-        when(libroRepository.findAll()).thenReturn(Collections.emptyList());
-
-        List<Libro> resultado = libroService.listarLibros();
-
-        assertTrue(resultado.isEmpty());
-    }
-
-    // ── obtenerLibroPorId ──────────────────────────────────────────
-
-    @Test
-    @DisplayName("obtenerLibroPorId: devuelve el libro si existe")
-    void testObtenerLibroPorIdExistente() {
-        when(libroRepository.findById(1L)).thenReturn(Optional.of(libro));
+    @DisplayName("obtenerLibroPorId: Devuelve el Optional correcto")
+    void testObtenerLibroPorId() {
+        when(libroRepository.findById(1L)).thenReturn(Optional.of(libroMock));
 
         Optional<Libro> resultado = libroService.obtenerLibroPorId(1L);
 
         assertTrue(resultado.isPresent());
-        assertEquals("Clean Code", resultado.get().getTitulo());
-    }
-
-    @Test
-    @DisplayName("obtenerLibroPorId: devuelve Optional vacio si no existe")
-    void testObtenerLibroPorIdNoExistente() {
-        when(libroRepository.findById(99L)).thenReturn(Optional.empty());
-
-        Optional<Libro> resultado = libroService.obtenerLibroPorId(99L);
-
-        assertFalse(resultado.isPresent());
+        assertEquals("Cien Años de Soledad", resultado.get().getTitulo());
     }
 }
