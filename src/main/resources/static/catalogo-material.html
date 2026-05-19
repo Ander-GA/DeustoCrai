@@ -64,13 +64,45 @@
             }
         }
 
-        // ESTA PARTE ES LA CLAVE PARA QUE APAREZCA EL HEADER
+        // --- FUNCIÓN CORREGIDA APUNTANDO A LA RUTA EXACTA DEL CONTROLADOR ---
+        async function prestarMaterial(materialId) {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                alert('Debes iniciar sesión para reservar material.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                // Aquí está el cambio clave: apuntamos al endpoint específico de material
+                const response = await fetch(`/api/prestamos/prestar-material/${materialId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token 
+                    }
+                });
+
+                if (response.ok) {
+                    alert('¡Material reservado con éxito!');
+                    cargarMateriales(); 
+                } else if (response.status === 401) {
+                    alert('Sesión expirada. Vuelve a iniciar sesión.');
+                    window.location.href = 'login.html';
+                } else {
+                    const errorMsg = await response.text();
+                    alert('Error al reservar: ' + errorMsg);
+                }
+            } catch (e) {
+                console.error('Error en la petición:', e);
+                alert('Error de conexión con el servidor.');
+            }
+        }
+
         window.onload = () => {
-            // Llamamos a la función init() que está dentro de auth.js para que cargue el header
             if (typeof init === "function") {
                 init(); 
             }
-            // Esperamos un pelín para cargar los materiales
             setTimeout(cargarMateriales, 300);
         };
     </script>
