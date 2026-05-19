@@ -32,6 +32,10 @@ public class Reserva {
     @Column(nullable = false)
     private boolean devuelta = false;
 
+    // NUEVO: Para saber si ya le hemos avisado de que su reserva empieza pronto
+    @Column(nullable = false)
+    private boolean avisoEnviado = false; 
+
     public Reserva() {}
 
     public Reserva(User usuario, Aula aula, LocalDateTime inicio, LocalDateTime fin) {
@@ -54,4 +58,7 @@ public class Reserva {
     
     public boolean isDevuelta() { return devuelta; }
     public void setDevuelta(boolean devuelta) { this.devuelta = devuelta; }
+
+    public boolean isAvisoEnviado() { return avisoEnviado; }
+    public void setAvisoEnviado(boolean avisoEnviado) { this.avisoEnviado = avisoEnviado; }
 }
