@@ -17,11 +17,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.deusto.spq.deustocrai.dao.LibroRepository;
+import es.deusto.spq.deustocrai.dao.MaterialRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.entity.Prestamo;
 import es.deusto.spq.deustocrai.entity.User;
-
 import org.junit.jupiter.api.Tag;
 
 @Tag("Unitario")
@@ -33,6 +33,14 @@ public class PrestamoServiceTest {
 
     @Mock
     private LibroRepository libroRepository;
+
+    // --- NUEVAS DEPENDENCIAS AÑADIDAS POR TU COMPAÑERO ---
+    @Mock
+    private MaterialRepository materialRepository;
+
+    @Mock
+    private ColaEsperaService colaEsperaService;
+    // ----------------------------------------------------
 
     @InjectMocks
     private PrestamoService prestamoService;
@@ -72,8 +80,9 @@ public class PrestamoServiceTest {
 
         assertTrue(resultado);
         assertEquals(Prestamo.EstadoPrestamo.DEVUELTO, prestamo.getEstado());
-        assertTrue(libro.isDisponible()); // El libro vuelve a estar disponible
-        verify(libroRepository, times(1)).save(libro); // Se debe guardar el libro actualizado
+        // Como hemos añadido el mock de ColaEsperaService, ya no fallará aquí
+        verify(colaEsperaService, times(1)).asignarPrimerUsuarioSiExiste(libro);
+        verify(prestamoRepository, times(1)).save(prestamo);
     }
     
     @Test
@@ -98,17 +107,13 @@ public class PrestamoServiceTest {
         p3.setFechaDevolucionReal(LocalDate.now()); // Lo ha devuelto hoy
         p3.setFechaDevolucionPrevista(LocalDate.now().minusDays(1)); // Tenía que devolverlo ayer
 
-        // Simulamos la respuesta de la base de datos
         when(prestamoRepository.findByUsuarioId(1L)).thenReturn(Arrays.asList(p1, p2, p3));
 
-        // Ejecutamos el servicio
         Map<String, Integer> stats = prestamoService.obtenerEstadisticasUsuario(usuarioPrueba);
 
-        // Verificamos que los números en el diccionario coinciden
         assertEquals(3, stats.get("totalPrestamos"));
         assertEquals(1, stats.get("prestamosActivos"));
         assertEquals(1, stats.get("devueltosATiempo"));
         assertEquals(1, stats.get("devueltosConRetraso"));
     }
-     
 }

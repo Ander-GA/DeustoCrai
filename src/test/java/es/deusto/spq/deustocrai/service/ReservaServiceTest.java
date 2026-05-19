@@ -17,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
+import es.deusto.spq.deustocrai.dao.BloqueoSalaRepository;
+import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import es.deusto.spq.deustocrai.entity.User;
@@ -29,6 +31,14 @@ public class ReservaServiceTest {
 
     @Mock
     private ReservaRepository reservaRepository;
+
+    // --- NUEVAS DEPENDENCIAS AÑADIDAS POR TU COMPAÑERO ---
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private BloqueoSalaRepository bloqueoSalaRepository;
+    // ----------------------------------------------------
 
     @InjectMocks
     private ReservaService reservaService;
@@ -47,9 +57,10 @@ public class ReservaServiceTest {
 
         inicio = LocalDateTime.of(2025, 6, 1, 10, 0);
         fin    = LocalDateTime.of(2025, 6, 1, 12, 0);
-    }
 
-    // ── realizarReserva: sin conflicto ─────────────────────────────
+        // Simulamos que el aula no está bloqueada para que los tests pasen
+        when(bloqueoSalaRepository.findByAulaId(anyLong())).thenReturn(Collections.emptyList());
+    }
 
     @Test
     @DisplayName("realizarReserva: guarda la reserva si el aula esta libre")
@@ -76,8 +87,6 @@ public class ReservaServiceTest {
         assertEquals(inicio, resultado.get().getFechaHoraInicio());
         assertEquals(fin, resultado.get().getFechaHoraFin());
     }
-
-    // ── realizarReserva: con conflicto ─────────────────────────────
 
     @Test
     @DisplayName("realizarReserva: devuelve Optional vacio si hay solapamiento exacto")
@@ -148,8 +157,6 @@ public class ReservaServiceTest {
         assertTrue(resultado.isPresent());
     }
 
-    // ── getReservasPorAula ─────────────────────────────────────────
-
     @Test
     @DisplayName("getReservasPorAula: devuelve las reservas del aula indicada")
     void testGetReservasPorAula() {
@@ -171,8 +178,6 @@ public class ReservaServiceTest {
 
         assertTrue(resultado.isEmpty());
     }
-
-    // ── obtenerReservasActivas ─────────────────────────────────────
 
     @Test
     @DisplayName("obtenerReservasActivas: devuelve reservas futuras")
