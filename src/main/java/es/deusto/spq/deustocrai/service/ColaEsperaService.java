@@ -89,4 +89,21 @@ public class ColaEsperaService {
 
         return Optional.of(prestamoGuardado);
     }
+
+    public int obtenerPosicion(Long recursoId, Long usuarioId) {
+
+        List<ColaEspera> cola = colaEsperaRepository
+                .findByRecursoIdAndEstadoOrderByFechaEntradaAsc(
+                        recursoId,
+                        EstadoCola.ACTIVA
+                );
+
+        for (int i = 0; i < cola.size(); i++) {
+            if (cola.get(i).getUsuario().getId().equals(usuarioId)) {
+                return i + 1;
+            }
+        }
+
+        return -1;
+    }
 }

@@ -86,4 +86,30 @@ public class ColaEsperaController {
 
         return ResponseEntity.ok("Has salido de la cola correctamente");
     }
+
+    @GetMapping("/recurso/{recursoId}/posicion")
+    public ResponseEntity<?> obtenerPosicion(
+            @RequestHeader(value = "Token-Auth", required = false) String tokenSwagger,
+            @RequestHeader(value = "Authorization", required = false) String tokenReal,
+            @PathVariable Long recursoId
+    ) {
+
+        String token = (tokenReal != null && !tokenReal.isEmpty())
+                ? tokenReal
+                : tokenSwagger;
+
+        User usuario = authService.getEmpleadoByToken(token);
+
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Token inválido");
+        }
+
+        int posicion = colaEsperaService.obtenerPosicion(
+                recursoId,
+                usuario.getId()
+        );
+
+        return ResponseEntity.ok(posicion);
+    }
 }
