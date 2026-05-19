@@ -1,28 +1,34 @@
 package es.deusto.spq.deustocrai.facade;
 
-import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import com.jayway.jsonpath.JsonPath;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import es.deusto.spq.deustocrai.entity.Libro;
 import org.junit.jupiter.api.Tag;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import es.deusto.spq.deustocrai.dao.LibroRepository;
+import es.deusto.spq.deustocrai.entity.Libro;
+import es.deusto.spq.deustocrai.service.LibroService;
+
 @Tag("Unitario")
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(LibroController.class)
 public class LibroControllerTest {
 
     @Autowired
@@ -31,73 +37,96 @@ public class LibroControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private es.deusto.spq.deustocrai.dao.UserRepository userRepository;
-    
-    @Autowired
-    private es.deusto.spq.deustocrai.dao.PrestamoRepository prestamoRepository;
+    // Inyectamos los mocks necesarios para el controlador de Libros
+    @MockitoBean
+    private LibroService libroService;
 
-    @Autowired
-    private es.deusto.spq.deustocrai.dao.LibroRepository libroRepository;
-    
+    @MockitoBean
+    private LibroRepository libroRepository;
+
+    private Libro libroMock;
+
+    @BeforeEach
+    void setUp() {
+        libroMock = new Libro();
+        org.springframework.test.util.ReflectionTestUtils.setField(libroMock, "id", 1L);
+        libroMock.setTitulo("El Señor de los Anillos");
+        libroMock.setAutor("J.R.R. Tolkien");
+    }
+
     @Test
-    @DisplayName("Debería registrar un nuevo libro correctamente y devolver 201 Created")
-    public void testAnadirLibroSuccess() throws Exception {
-        Libro nuevoLibro = new Libro("El Señor de los Anillos", "978-0261102385", "J.R.R. Tolkien");
+    @DisplayName("GET /api/libros - Retorna la lista de todos los libros")
+    public void testListarLibros() throws Exception {
+        when(libroService.listarLibros()).thenReturn(Arrays.asList(libroMock));
+
+        mockMvc.perform(get("/api/libros"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/libros/buscar?q=... - Retorna libros filtrados por título")
+    public void testBuscarLibros() throws Exception {
+        when(libroRepository.findByTituloContainingIgnoreCase("Señor")).thenReturn(Arrays.asList(libroMock));
+
+        mockMvc.perform(get("/api/libros/buscar")
+                .param("q", "Señor"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/libros/{id} - Retorna 200 y el libro si existe")
+    public void testObtenerDetallesLibroExiste() throws Exception {
+        when(libroService.obtenerLibroPorId(1L)).thenReturn(Optional.of(libroMock));
+
+        mockMvc.perform(get("/api/libros/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/libros/{id} - Retorna 404 si el libro no existe")
+    public void testObtenerDetallesLibroNoExiste() throws Exception {
+        when(libroService.obtenerLibroPorId(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/libros/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /api/libros - Crea un nuevo libro y retorna 201 Created")
+    public void testAnadirLibro() throws Exception {
+        when(libroService.anadirLibro(any(Libro.class))).thenReturn(libroMock);
 
         mockMvc.perform(post("/api/libros")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(nuevoLibro)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.titulo", is("El Señor de los Anillos")))
-                .andExpect(jsonPath("$.isbn", is("978-0261102385")))
-                .andExpect(jsonPath("$.disponible", is(true)));
+                .content(objectMapper.writeValueAsString(libroMock)))
+                .andExpect(status().isCreated());
     }
 
     @Test
-    @DisplayName("Debería borrar un libro existente y devolver 204 No Content")
-    public void testBorrarLibroSuccess() throws Exception {
-        Libro libroTemporal = new Libro("Libro Para Borrar", "000-0000000000", "Autor Anonimo");
-        
-        MvcResult result = mockMvc.perform(post("/api/libros")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(libroTemporal)))
-                .andExpect(status().isCreated())
-                .andReturn();
-        
-        String responseBody = result.getResponse().getContentAsString();
-        Integer id = JsonPath.read(responseBody, "$.id");
+    @DisplayName("DELETE /api/libros/{id} - Retorna 204 No Content si se borra con éxito")
+    public void testBorrarLibroExito() throws Exception {
+        when(libroService.borrarLibro(1L)).thenReturn(1);
 
-        mockMvc.perform(delete("/api/libros/" + id))
+        mockMvc.perform(delete("/api/libros/1"))
                 .andExpect(status().isNoContent());
-
-        mockMvc.perform(delete("/api/libros/" + id))
-                .andExpect(status().isNotFound());
     }
+
     @Test
-    @DisplayName("Debería fallar (409 Conflict) al borrar un libro que actualmente está prestado")
-    public void testBorrarLibroConflicto() throws Exception {
-        // 1. Creamos un usuario de prueba en la BD para poder hacer el préstamo
-        es.deusto.spq.deustocrai.entity.User user = new es.deusto.spq.deustocrai.entity.User();
-        user.setEmail("estudiante-conflicto@deusto.es");
-        user.setPassword("password123");
-        user.setNombre("Usuario");
-        user.setApellidos("Conflicto");
-        user.setRole(es.deusto.spq.deustocrai.entity.User.Role.ESTUDIANTE);
-        user = userRepository.save(user);
+    @DisplayName("DELETE /api/libros/{id} - Retorna 409 Conflict si el libro está prestado")
+    public void testBorrarLibroPrestado() throws Exception {
+        when(libroService.borrarLibro(1L)).thenReturn(0);
 
-        // 2. Creamos y guardamos un libro real en la BD
-        Libro libroPrestado = new Libro("Libro En Préstamo", "123-4567890123", "Autor Pruebas");
-        libroPrestado.setDisponible(false); // Lo marcamos como no disponible
-        libroPrestado = libroRepository.save(libroPrestado);
+        mockMvc.perform(delete("/api/libros/1"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("No se puede borrar el libro porque actualmente se encuentra prestado."));
+    }
 
-        // 3. Creamos el préstamo activo (PENDIENTE_ENTREGA) asociando el usuario y el libro
-        es.deusto.spq.deustocrai.entity.Prestamo prestamo = new es.deusto.spq.deustocrai.entity.Prestamo(user, libroPrestado);
-        prestamo.setEstado(es.deusto.spq.deustocrai.entity.Prestamo.EstadoPrestamo.PENDIENTE_ENTREGA);
-        prestamoRepository.save(prestamo);
+    @Test
+    @DisplayName("DELETE /api/libros/{id} - Retorna 404 Not Found si el libro a borrar no existe")
+    public void testBorrarLibroNoEncontrado() throws Exception {
+        when(libroService.borrarLibro(99L)).thenReturn(-1); // Cualquier valor que no sea 1 o 0
 
-        // 4. Intentamos borrar el libro por la API
-        mockMvc.perform(delete("/api/libros/" + libroPrestado.getId()))
-                .andExpect(status().isConflict()); // Debe devolver 409
+        mockMvc.perform(delete("/api/libros/99"))
+                .andExpect(status().isNotFound());
     }
 }
