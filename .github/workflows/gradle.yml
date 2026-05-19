@@ -38,8 +38,11 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
+    # Aquí configuramos Gradle Y le decimos que genere los 3 checks
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
+      with:
+        dependency-graph: generate-and-submit
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
@@ -63,8 +66,3 @@ jobs:
     # 5. Construcción del JAR final (solo si los tests pasan)
     - name: Build with Gradle
       run: ./gradlew build -x test -x integrationTest -x performanceTest
-	  
-	- name: Setup Gradle
-	    uses: gradle/actions/setup-gradle@v4
-        with:
-          dependency-graph: generate-and-submit
