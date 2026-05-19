@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrar Resultado - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .form-container { max-width: 500px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        label { font-weight: bold; margin-top: 15px; display: block; color: var(--azul-deusto); }
+        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .score-container { display: flex; gap: 20px; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="container">
+        <div class="form-container">
+            <h2 style="text-align: center;">📝 Registrar Resultado del Partido</h2>
+            <form id="form-resultado">
+                <label>ID de la Reserva:</label>
+                <input type="number" id="reservaId" placeholder="Ej: 1" required>
+
+                <div class="score-container">
+                    <div>
+                        <label>Tus Puntos / Goles:</label>
+                        <input type="number" id="puntosLocal" min="0" required>
+                    </div>
+                    <div>
+                        <label>Puntos Rival:</label>
+                        <input type="number" id="puntosVisitante" min="0" required>
+                    </div>
+                </div>
+
+                <label>Comentarios (Opcional):</label>
+                <textarea id="comentarios" rows="3" placeholder="Ej: Partido muy reñido..."></textarea>
+
+                <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">Subir Resultado</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.getElementById('form-resultado').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            if (!token) { alert("Inicia sesión primero, anda."); return; }
+
+            const payload = {
+                reserva: { id: document.getElementById('reservaId').value },
+                puntosLocal: document.getElementById('puntosLocal').value,
+                puntosVisitante: document.getElementById('puntosVisitante').value,
+                comentarios: document.getElementById('comentarios').value
+            };
+
+            try {
+                const response = await fetch('/api/deportes/stats/registrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(payload)
+                });
+
+                const msg = await response.text();
+                if (response.ok) {
+                    alert("✅ " + msg);
+                    window.location.href = 'ranking-deportivo.html';
+                } else {
+                    alert("❌ Error: " + msg);
+                }
+            } catch (e) {
+                alert("Fallo de conexión al servidor.");
+            }
+        });
+    </script>
+</body>
+</html>

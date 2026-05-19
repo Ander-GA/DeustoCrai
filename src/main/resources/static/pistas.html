@@ -29,6 +29,7 @@
     <div id="header-placeholder"></div>
 
     <main class="container">
+        
         <div style="max-width: 600px; margin: 40px auto;">
             <h2>Solicitar Instalación Deportiva</h2>
             <p>Recuerda: Máximo 6 días de antelación. Las solicitudes deben ser aprobadas por un bibliotecario.</p>
@@ -46,7 +47,7 @@
                     <label>Hora de Inicio:</label>
                     <input type="time" id="hora" required>
 
-                    <button type="submit" class="btn-primary" style="margin-top: 20px;">Enviar Solicitud</button>
+                    <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">Enviar Solicitud</button>
                 </form>
             </div>
         </div>
@@ -55,6 +56,20 @@
             <h2 style="text-align: center; color: var(--azul-deusto); margin-bottom: 20px;">Disponibilidad de Pistas</h2>
             <div id='calendar'></div>
         </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 30px 20px; border-top: 2px solid #eee;">
+            <h3 style="color: var(--azul-deusto); margin-top: 0;">¿Has terminado de jugar?</h3>
+            <p style="color: #666; margin-bottom: 20px;">Registra el resultado de tu reserva y compite en la clasificación global.</p>
+            
+            <a href="registrar-resultado.html" style="text-decoration: none; padding: 12px 24px; background-color: var(--azul-deusto); color: white; border-radius: 5px; font-weight: bold; margin: 0 10px; display: inline-block;">
+                📝 Registrar Resultado
+            </a>
+            
+            <a href="ranking-deportivo.html" style="text-decoration: none; padding: 12px 24px; background-color: #d4af37; color: white; border-radius: 5px; font-weight: bold; margin: 0 10px; display: inline-block;">
+                🏆 Ver Ranking Deportivo
+            </a>
+        </div>
+        
     </main>
 
     <script src="js/auth.js"></script>
@@ -64,16 +79,16 @@
             // 1. Renderizar el calendario
             var calendarEl = document.getElementById('calendar');
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek', // Vista semanal por horas por defecto
+                initialView: 'timeGridWeek',
                 locale: 'es',
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
-                events: '/api/deportes/eventos', // Llamada automática a nuestro nuevo endpoint
-                slotMinTime: '08:00:00', // Hora de apertura
-                slotMaxTime: '22:00:00', // Hora de cierre
+                events: '/api/deportes/eventos',
+                slotMinTime: '08:00:00',
+                slotMaxTime: '22:00:00',
                 allDaySlot: false,
                 height: 'auto'
             });
@@ -126,7 +141,7 @@
                 const msg = await response.text();
                 if (response.ok) {
                     alert("✅ " + msg);
-                    window.location.reload(); // Recarga para actualizar el calendario
+                    window.location.reload(); 
                 } else {
                     alert("❌ Error: " + msg);
                 }
