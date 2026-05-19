@@ -1,29 +1,31 @@
 package es.deusto.spq.deustocrai.facade;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.BeforeEach;
+import java.util.Optional;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.Tag;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.deusto.spq.deustocrai.dto.CredentialsDTO;
 import es.deusto.spq.deustocrai.dto.CreateUserDTO;
-import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.User;
-import org.junit.jupiter.api.Tag;
+import es.deusto.spq.deustocrai.service.AuthService;
 
 @Tag("Unitario")
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(AuthController.class)
 public class AuthControllerTest {
 
     @Autowired
@@ -32,62 +34,74 @@ public class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private UserRepository userRepository;
+    // Simulamos el servicio para aislar el controlador
+    @MockitoBean
+    private AuthService authService;
 
-    @BeforeEach
-    void setUp() {
-        // Preparamos un usuario en la BD para que los tests de login funcionen
-        // sin depender del DataInitializer
-        if(userRepository.findByEmail("testlogin@deusto.es").isEmpty()) {
-            User testUser = new User();
-            testUser.setEmail("testlogin@deusto.es");
-            testUser.setPassword("password123");
-            testUser.setNombre("Test");
-            testUser.setApellidos("Login");
-            testUser.setRole(User.Role.ESTUDIANTE);
-            userRepository.save(testUser);
-        }
-    }
-
+    // --- TESTS PARA LOGIN ---
     @Test
-    @DisplayName("Debería retornar OK y un token cuando las credenciales son correctas")
+    @DisplayName("Login: Retorna 200 OK y token si credenciales son correctas")
     public void testLoginSuccess() throws Exception {
-        CredentialsDTO loginRequest = new CredentialsDTO();
-        loginRequest.setEmail("testlogin@deusto.es"); 
-        loginRequest.setPassword("password123");
+        CredentialsDTO loginReq = new CredentialsDTO();
+        loginReq.setEmail("test@deusto.es");
+        loginReq.setPassword("123");
+
+        when(authService.login("test@deusto.es", "123")).thenReturn(Optional.of("token-simulado"));
 
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
+                .content(objectMapper.writeValueAsString(loginReq)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(notNullValue()));
+                .andExpect(content().string("token-simulado"));
     }
 
     @Test
-    @DisplayName("Debería retornar 401 Unauthorized cuando la contraseña es incorrecta")
+    @DisplayName("Login: Retorna 401 si credenciales son incorrectas")
     public void testLoginFailure() throws Exception {
-        CredentialsDTO wrongRequest = new CredentialsDTO();
-        wrongRequest.setEmail("testlogin@deusto.es");
-        wrongRequest.setPassword("contrasena-falsa");
+        CredentialsDTO loginReq = new CredentialsDTO();
+        loginReq.setEmail("test@deusto.es");
+        loginReq.setPassword("mal");
+
+        when(authService.login("test@deusto.es", "mal")).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(wrongRequest)))
+                .content(objectMapper.writeValueAsString(loginReq)))
                 .andExpect(status().isUnauthorized());
     }
 
+    // --- TESTS PARA LOGOUT ---
     @Test
-    @DisplayName("Debería registrar un usuario correctamente y devolver 201 Created")
+    @DisplayName("Logout: Retorna 204 No Content si se desloguea con éxito")
+    public void testLogoutSuccess() throws Exception {
+        when(authService.logout("token-valido")).thenReturn(Optional.of(true));
+
+        mockMvc.perform(post("/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("token-valido"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Logout: Retorna 401 si el token es inválido")
+    public void testLogoutFailure() throws Exception {
+        when(authService.logout("token-falso")).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("token-falso"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- TESTS PARA REGISTER ---
+    @Test
+    @DisplayName("Register: Registra usuario correctamente y devuelve 201")
     public void testRegisterSuccess() throws Exception {
-        // CORRECCIÓN: Usamos CreateUserDTO en lugar de la entidad User
         CreateUserDTO newUser = new CreateUserDTO();
-        newUser.setEmail("nuevo-registro@deusto.es");
+        newUser.setEmail("nuevo@deusto.es");
         newUser.setPassword("12345");
-        newUser.setNombre("Nuevo");
-        newUser.setApellidos("Usuario");
-        // Suponiendo que tu DTO usa este enumerado
-        newUser.setRole(CreateUserDTO.Role.ESTUDIANTE); 
+        
+        when(authService.register(any(CreateUserDTO.class))).thenReturn(Optional.of(new User()));
 
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -97,20 +111,41 @@ public class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("Debería fallar al registrar un usuario con un email que ya existe")
+    @DisplayName("Register: Falla si email ya existe y devuelve 400")
     public void testRegisterFailureDuplicateEmail() throws Exception {
-        // Usamos el email que hemos creado en el BeforeEach para forzar el fallo
         CreateUserDTO duplicateUser = new CreateUserDTO();
-        duplicateUser.setEmail("testlogin@deusto.es"); 
-        duplicateUser.setPassword("cualquier-password");
-        duplicateUser.setNombre("Duplicado");
-        duplicateUser.setApellidos("Prueba");
-        duplicateUser.setRole(CreateUserDTO.Role.ESTUDIANTE);
+        duplicateUser.setEmail("duplicado@deusto.es");
+        
+        when(authService.register(any(CreateUserDTO.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(duplicateUser)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("El email ya está en uso"));
+    }
+
+    // --- TESTS PARA GET CURRENT USER (/me) ---
+    @Test
+    @DisplayName("Me: Retorna los datos del usuario si el token es válido")
+    public void testGetCurrentUserSuccess() throws Exception {
+        User mockUser = new User();
+        mockUser.setEmail("usuario@deusto.es");
+
+        when(authService.getEmpleadoByToken("token-valido")).thenReturn(mockUser);
+
+        mockMvc.perform(get("/auth/me")
+                .header("Authorization", "token-valido"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Me: Retorna 401 si el token es inválido")
+    public void testGetCurrentUserFailure() throws Exception {
+        when(authService.getEmpleadoByToken("token-invalido")).thenReturn(null);
+
+        mockMvc.perform(get("/auth/me")
+                .header("Authorization", "token-invalido"))
+                .andExpect(status().isUnauthorized());
     }
 }
