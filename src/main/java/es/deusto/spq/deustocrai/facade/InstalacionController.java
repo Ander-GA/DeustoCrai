@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/deportes")
 public class InstalacionController {
@@ -70,5 +73,11 @@ public class InstalacionController {
             return ResponseEntity.ok("Reserva actualizada a: " + estado);
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
+    // Obtener los eventos para el calendario
+    @GetMapping("/eventos")
+    public ResponseEntity<List<Map<String, Object>>> obtenerEventosCalendario() {
+        return ResponseEntity.ok(instalacionService.obtenerEventosCalendario());
     }
 }

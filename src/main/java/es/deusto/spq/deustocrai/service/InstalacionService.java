@@ -4,7 +4,12 @@ import es.deusto.spq.deustocrai.dao.InstalacionRepository;
 import es.deusto.spq.deustocrai.dao.ReservaInstalacionRepository;
 import es.deusto.spq.deustocrai.entity.ReservaInstalacion;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -55,5 +60,35 @@ public class InstalacionService {
             return true;
         }
         return false;
+    }
+
+    public List<Map<String, Object>> obtenerEventosCalendario() {
+        // Solo mostramos en el calendario las reservas que ya están aprobadas
+        List<ReservaInstalacion> aprobadas = reservaRepo.findByEstado(ReservaInstalacion.EstadoReserva.APROBADA);
+        List<Map<String, Object>> eventos = new ArrayList<>();
+        
+        for (ReservaInstalacion res : aprobadas) {
+            Map<String, Object> evento = new HashMap<>();
+            evento.put("id", res.getId());
+            evento.put("title", res.getInstalacion().getNombre() + " - Ocupada");
+            // LocalDateTime.toString() formatea automáticamente a ISO 8601 (ej: 2026-05-20T10:00:00)
+            evento.put("start", res.getFechaHoraInicio().toString());
+            evento.put("end", res.getFechaHoraFin().toString());
+            
+            // Asignar colores por tipo y pista
+            String color;
+            if ("FUTBOL".equalsIgnoreCase(res.getInstalacion().getTipo())) {
+                color = "#28a745"; // Verde para el campo de fútbol
+            } else {
+                // Para las pistas de pádel u otros, asignamos un color distinto basado en su ID
+                String[] colores = {"#007bff", "#dc3545", "#fd7e14", "#6f42c1", "#17a2b8"};
+                int indiceColor = (int) (res.getInstalacion().getId() % colores.length);
+                color = colores[indiceColor];
+            }
+            evento.put("color", color);
+            
+            eventos.add(evento);
+        }
+        return eventos;
     }
 }

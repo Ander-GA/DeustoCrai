@@ -4,41 +4,82 @@
     <meta charset="UTF-8">
     <title>Reserva de Pistas - DeustoCrai</title>
     <link rel="stylesheet" href="css/style.css">
+    
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
+
     <style>
         .form-reserva { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .form-reserva label { font-weight: bold; margin-top: 15px; display: block; color: var(--azul-deusto); }
         .form-reserva select, .form-reserva input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        /* Estilos para el contenedor del calendario */
+        #calendar-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
 
-    <main class="container" style="max-width: 600px; margin: 40px auto;">
-        <h2>Solicitar Instalación Deportiva</h2>
-        <p>Recuerda: Máximo 6 días de antelación. Las solicitudes deben ser aprobadas por un bibliotecario.</p>
-        
-        <div class="form-reserva">
-            <form id="form-pista">
-                <label>Selecciona la Instalación:</label>
-                <select id="instalacion" required>
-                    <option value="">Cargando instalaciones...</option>
-                </select>
+    <main class="container">
+        <div style="max-width: 600px; margin: 40px auto;">
+            <h2>Solicitar Instalación Deportiva</h2>
+            <p>Recuerda: Máximo 6 días de antelación. Las solicitudes deben ser aprobadas por un bibliotecario.</p>
+            
+            <div class="form-reserva">
+                <form id="form-pista">
+                    <label>Selecciona la Instalación:</label>
+                    <select id="instalacion" required>
+                        <option value="">Cargando instalaciones...</option>
+                    </select>
 
-                <label>Fecha del Partido:</label>
-                <input type="date" id="fecha" required>
+                    <label>Fecha del Partido:</label>
+                    <input type="date" id="fecha" required>
 
-                <label>Hora de Inicio:</label>
-                <input type="time" id="hora" required>
+                    <label>Hora de Inicio:</label>
+                    <input type="time" id="hora" required>
 
-                <button type="submit" class="btn-primary" style="margin-top: 20px;">Enviar Solicitud</button>
-            </form>
+                    <button type="submit" class="btn-primary" style="margin-top: 20px;">Enviar Solicitud</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="calendar-container">
+            <h2 style="text-align: center; color: var(--azul-deusto); margin-bottom: 20px;">Disponibilidad de Pistas</h2>
+            <div id='calendar'></div>
         </div>
     </main>
 
     <script src="js/auth.js"></script>
     <script>
-        // Cargar instalaciones al entrar
-        window.addEventListener('load', async () => {
+        // Inicializar FullCalendar y cargar instalaciones al entrar
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 1. Renderizar el calendario
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek', // Vista semanal por horas por defecto
+                locale: 'es',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: '/api/deportes/eventos', // Llamada automática a nuestro nuevo endpoint
+                slotMinTime: '08:00:00', // Hora de apertura
+                slotMaxTime: '22:00:00', // Hora de cierre
+                allDaySlot: false,
+                height: 'auto'
+            });
+            calendar.render();
+
+            // 2. Cargar el select del formulario
             try {
                 const response = await fetch('/api/deportes/instalaciones');
                 const instalaciones = await response.json();
@@ -62,14 +103,11 @@
             const fecha = document.getElementById('fecha').value;
             const hora = document.getElementById('hora').value;
 
-            // Formateamos las fechas para Spring Boot (ISO 8601)
             const inicioStr = `${fecha}T${hora}:00`;
             
-            // Calculamos el fin (por defecto 1h y 30 mins de partido)
             let finObj = new Date(inicioStr);
             finObj.setMinutes(finObj.getMinutes() + 90);
             
-            // Re-formatear a YYYY-MM-DDTHH:MM:00 local
             const finStr = new Date(finObj.getTime() - (finObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 19);
 
             const payload = {
@@ -88,7 +126,7 @@
                 const msg = await response.text();
                 if (response.ok) {
                     alert("✅ " + msg);
-                    window.location.href = 'index.html';
+                    window.location.reload(); // Recarga para actualizar el calendario
                 } else {
                     alert("❌ Error: " + msg);
                 }

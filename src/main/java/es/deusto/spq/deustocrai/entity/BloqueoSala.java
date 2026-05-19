@@ -2,6 +2,7 @@ package es.deusto.spq.deustocrai.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
 @Table(name = "bloqueo_sala")
@@ -15,9 +16,12 @@ public class BloqueoSala {
     @JoinColumn(name = "aula_id")
     private Aula aula;
 
+    // Le decimos a Jackson el formato exacto que nos envía el frontend
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(nullable = false)
     private LocalDateTime fechaInicio;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(nullable = false)
     private LocalDateTime fechaFin;
 

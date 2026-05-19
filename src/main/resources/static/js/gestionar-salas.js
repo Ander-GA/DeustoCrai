@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Verificar si el usuario está autenticado y tiene rol adecuado (Librarian/Admin)
     const token = localStorage.getItem("token");
     if (!token) {
         window.location.href = "login.html";
@@ -8,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cargarSalas();
 
-    // Manejar el envío del formulario de bloqueo
     document.getElementById("formBloqueo").addEventListener("submit", (e) => {
         e.preventDefault();
         enviarBloqueo();
@@ -17,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function cargarSalas() {
     try {
-        // CORRECCIÓN: Cambiado de "/api/aulas" a "/api/salas" para que coincida con el AulaController
         const response = await fetch("/api/salas", {
             headers: {
                 "Authorization": localStorage.getItem("token")
@@ -64,8 +61,8 @@ function cerrarModal() {
 
 async function enviarBloqueo() {
     const aulaId = document.getElementById("bloqueo-aula-id").value;
-    const fechaInicio = document.getElementById("fecha-inicio").value; // Formato ISO local
-    const fechaFin = document.getElementById("fecha-fin").value;
+    let fechaInicio = document.getElementById("fecha-inicio").value;
+    let fechaFin = document.getElementById("fecha-fin").value;
     const motivo = document.getElementById("motivo-bloqueo").value;
 
     if (new Date(fechaInicio) >= new Date(fechaFin)) {
@@ -73,14 +70,17 @@ async function enviarBloqueo() {
         return;
     }
 
+    // Comprobación de seguridad: añadimos los segundos solo si el navegador no los puso (YYYY-MM-DDThh:mm tiene longitud 16)
+    if (fechaInicio.length === 16) fechaInicio += ":00";
+    if (fechaFin.length === 16) fechaFin += ":00";
+
     const payload = {
-        fechaInicio: fechaInicio + ":00", // Añadimos los segundos para el formato LocalDateTime de Java
-        fechaFin: fechaFin + ":00",
+        fechaInicio: fechaInicio, 
+        fechaFin: fechaFin,
         motivo: motivo
     };
 
     try {
-        // CORRECCIÓN: Cambiado de "/api/aulas" a "/api/salas" para la ruta de bloqueo
         const response = await fetch(`/api/salas/${aulaId}/bloquear`, {
             method: "POST",
             headers: {
