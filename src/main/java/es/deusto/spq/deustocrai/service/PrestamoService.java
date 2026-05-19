@@ -1,14 +1,17 @@
 package es.deusto.spq.deustocrai.service;
 
+import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
 import es.deusto.spq.deustocrai.dao.LibroRepository;
 import es.deusto.spq.deustocrai.dao.MaterialRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
+import es.deusto.spq.deustocrai.entity.ColaEspera;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.entity.Material;
 import es.deusto.spq.deustocrai.entity.Prestamo;
 import es.deusto.spq.deustocrai.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -24,6 +27,15 @@ public class PrestamoService {
 
     @Autowired
     private LibroRepository libroRepository;
+    
+    @Autowired
+    private MaterialRepository materialRepository;
+
+    @Autowired
+    private ColaEsperaService colaEsperaService;
+
+    @Autowired
+    private ColaEsperaRepository colaEsperaRepository; // Añadido para validar la cola en la renovación
 
     public List<Prestamo> obtenerPrestamosPorUsuario(User usuario) {
     	List<Prestamo> todosLosPrestamos = prestamoRepository.findByUsuarioId(usuario.getId());
@@ -40,7 +52,6 @@ public class PrestamoService {
         );
     }
 
-    // NUEVO MÉTODO PARA EL BIBLIOTECARIO: Obtener todos los préstamos del sistema
     public List<Prestamo> obtenerTodosLosPrestamos() {
         return prestamoRepository.findAll();
     }
@@ -50,10 +61,9 @@ public class PrestamoService {
         
         if (libroOpt.isPresent() && libroOpt.get().isDisponible()) {
             Libro libro = libroOpt.get();
-            libro.setDisponible(false); // El libro se reserva automáticamente para que nadie más lo coja
+            libro.setDisponible(false); 
             libroRepository.save(libro); 
             
-            // Crea el préstamo (por defecto se pondrá en PENDIENTE_ENTREGA por el constructor)
             Prestamo prestamo = new Prestamo(usuario, libro);
             return prestamoRepository.save(prestamo);
         }
@@ -66,7 +76,6 @@ public class PrestamoService {
         if (prestamoOpt.isPresent()) {
             Prestamo prestamo = prestamoOpt.get();
             
-            // Validamos que el préstamo pertenezca al usuario y no esté ya devuelto
             if (prestamo.getUsuario().getId().equals(usuario.getId()) && prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
                 if (prestamo.getRecurso() instanceof Libro) {
 					Libro libro = (Libro) prestamo.getRecurso();
@@ -79,7 +88,6 @@ public class PrestamoService {
 				prestamo.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
 				prestamoRepository.save(prestamo);
 				return true;
-					
 				}
             }
         return false;
@@ -92,7 +100,6 @@ public class PrestamoService {
             Prestamo prestamo = prestamoOpt.get();
             prestamo.setEstado(nuevoEstado);
             
-            // Si el bibliotecario marca como devuelto, tenemos que liberar el libro
             if (nuevoEstado == Prestamo.EstadoPrestamo.DEVUELTO) {
             	prestamo.setFechaDevolucionReal(LocalDate.now());
                 if (prestamo.getRecurso() instanceof Libro) {
@@ -109,17 +116,13 @@ public class PrestamoService {
         }
         return false;
     }
-    
-    
-    @Autowired
-    private MaterialRepository materialRepository;
 
     public Prestamo realizarPrestamoMaterial(User usuario, Long materialId) {
         Optional<Material> materialOpt = materialRepository.findById(materialId);
         
         if (materialOpt.isPresent() && materialOpt.get().isDisponible()) {
             Material material = materialOpt.get();
-            material.setDisponible(false); // El material se marca como ocupado
+            material.setDisponible(false); 
             materialRepository.save(material); 
             
             Prestamo prestamo = new Prestamo(usuario, material);
@@ -136,9 +139,6 @@ public class PrestamoService {
         return prestamoRepository.findMaterialesPrestadosActivos();
     }
 
-    @Autowired
-    private ColaEsperaService colaEsperaService;
-    
     public Map<String, Integer> obtenerEstadisticasUsuario(User usuario) {
         List<Prestamo> prestamos = prestamoRepository.findByUsuarioId(usuario.getId());
         
@@ -159,7 +159,6 @@ public class PrestamoService {
             }
         }
 
-        // Empaquetamos los resultados en un Mapa (Diccionario)
         Map<String, Integer> estadisticas = new HashMap<>();
         estadisticas.put("totalPrestamos", total);
         estadisticas.put("prestamosActivos", activos);
@@ -167,5 +166,37 @@ public class PrestamoService {
         estadisticas.put("devueltosConRetraso", conRetraso);
 
         return estadisticas;
+    }
+
+    // --- NUEVA LÓGICA DE RENOVACIÓN DE PRÉSTAMO ---
+    @Transactional
+    public Prestamo renovarPrestamo(Long prestamoId, User usuarioAutenticado) {
+        Prestamo prestamo = prestamoRepository.findById(prestamoId)
+                .orElseThrow(() -> new IllegalArgumentException("Préstamo no encontrado"));
+
+        if (!prestamo.getUsuario().getId().equals(usuarioAutenticado.getId())) {
+            throw new IllegalStateException("No tienes permiso para renovar este préstamo");
+        }
+
+        if (prestamo.getEstado() == Prestamo.EstadoPrestamo.DEVUELTO) {
+            throw new IllegalStateException("Solo se pueden renovar préstamos activos");
+        }
+        
+        if (prestamo.getFechaDevolucionPrevista().isBefore(LocalDate.now())) {
+             throw new IllegalStateException("El préstamo ya está vencido, debes devolverlo y pagar penalización si aplica.");
+        }
+
+        List<ColaEspera> cola = colaEsperaRepository.findByRecursoIdAndEstadoOrderByFechaEntradaAsc(
+                prestamo.getRecurso().getId(), 
+                ColaEspera.EstadoCola.ACTIVA
+        );
+
+        if (!cola.isEmpty()) {
+            throw new IllegalStateException("No puedes renovar el material porque hay usuarios en lista de espera");
+        }
+
+        // Extender el préstamo 7 días más desde la fecha de fin prevista
+        prestamo.setFechaDevolucionPrevista(prestamo.getFechaDevolucionPrevista().plusDays(7));
+        return prestamoRepository.save(prestamo);
     }
 }

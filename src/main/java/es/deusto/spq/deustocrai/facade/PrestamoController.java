@@ -230,4 +230,33 @@ public class PrestamoController {
         // El servicio devuelve un Map, y Spring lo convierte en JSON automáticamente
         return ResponseEntity.ok(prestamoService.obtenerEstadisticasUsuario(user));
     }
+    
+    @Operation(summary = "Renovar un préstamo activo")
+    @PutMapping("/{prestamoId}/renovar")
+    public ResponseEntity<?> renovarPrestamo(
+            @Parameter(in = ParameterIn.HEADER, name = "Token-Auth", required = true)
+            @RequestHeader(value = "Token-Auth", required = false) String tokenSwagger,
+            @RequestHeader(value = "Authorization", required = false) String tokenReal,
+            @PathVariable("prestamoId") Long prestamoId) {
+            
+        String token = (tokenReal != null && !tokenReal.isEmpty()) ? tokenReal : tokenSwagger;
+        
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se ha recibido el token.");
+        }
+
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido.");
+        }
+
+        try {
+            Prestamo renovado = prestamoService.renovarPrestamo(prestamoId, user);
+            return ResponseEntity.ok("{\"mensaje\": \"Préstamo renovado con éxito hasta el " + renovado.getFechaDevolucionPrevista() + "\"}");
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("{\"error\": \"" + e.getMessage() + "\"}");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
 }
