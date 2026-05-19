@@ -27,4 +27,15 @@ public class NotificacionService {
         System.out.println("Fecha prevista: " + prestamo.getFechaDevolucionPrevista());
         System.out.println("======================================");
     }
+
+    public void notificarPenalizacion(User usuario, int dias) {
+    System.out.println("======================================");
+    System.out.println("📧 NOTIFICACIÓN DE PENALIZACIÓN");
+    System.out.println("Para: " + usuario.getEmail());
+    System.out.println("Asunto: Penalización aplicada");
+    System.out.println("Hola " + usuario.getNombre() + ",");
+    System.out.println("Se te ha aplicado una penalización de " + dias + " días.");
+    System.out.println("No podrás realizar nuevas reservas/préstamos hasta: " + usuario.getFechaFinPenalizacion());
+    System.out.println("======================================");
+}
 }

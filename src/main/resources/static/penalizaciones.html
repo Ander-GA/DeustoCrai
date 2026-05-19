@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Penalizaciones - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: var(--azul-deusto);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: var(--azul-deusto);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .estado-ok {
+            color: green;
+            font-weight: bold;
+        }
+
+        .estado-penalizado {
+            color: red;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-penalizar {
+            background-color: #dc3545;
+        }
+
+        .btn-quitar {
+            background-color: var(--naranja-deusto);
+        }
+
+        .dias-input {
+            width: 60px;
+            padding: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="header-placeholder"></div>
+
+<main class="container">
+    <h2>Gestión de Penalizaciones</h2>
+
+    <div id="mensaje"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Fin penalización</th>
+                <th>Días</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody id="tabla-usuarios">
+            <tr>
+                <td colspan="7">Cargando usuarios...</td>
+            </tr>
+        </tbody>
+    </table>
+</main>
+
+<script src="js/auth.js"></script>
+
+<script>
+    async function cargarUsuarios() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("Debes iniciar sesión como administrador o bibliotecario.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/penalizaciones/usuarios", {
+                headers: {
+                    "Authorization": token
+                }
+            });
+
+            if (response.status === 403) {
+                document.getElementById("tabla-usuarios").innerHTML =
+                    `<tr><td colspan="7">No tienes permisos para ver esta página.</td></tr>`;
+                return;
+            }
+
+            const usuarios = await response.json();
+            const tabla = document.getElementById("tabla-usuarios");
+
+            tabla.innerHTML = "";
+
+            usuarios.forEach(usuario => {
+                const penalizado = usuario.bloqueado === true;
+
+                const estado = penalizado
+                    ? `<span class="estado-penalizado">Penalizado</span>`
+                    : `<span class="estado-ok">Activo</span>`;
+
+                const fechaFin = usuario.fechaFinPenalizacion
+                    ? usuario.fechaFinPenalizacion.replace("T", " ")
+                    : "-";
+
+                const accion = penalizado
+                    ? `<button class="btn btn-quitar" onclick="quitarPenalizacion(${usuario.id})">Quitar penalización</button>`
+                    : `<button class="btn btn-penalizar" onclick="aplicarPenalizacion(${usuario.id})">Penalizar</button>`;
+
+                tabla.innerHTML += `
+                    <tr>
+                        <td>${usuario.nombre} ${usuario.apellidos}</td>
+                        <td>${usuario.email}</td>
+                        <td>${usuario.role}</td>
+                        <td>${estado}</td>
+                        <td>${fechaFin}</td>
+                        <td>
+                            <input class="dias-input" type="number" id="dias-${usuario.id}" value="7" min="1">
+                        </td>
+                        <td>${accion}</td>
+                    </tr>
+                `;
+            });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("tabla-usuarios").innerHTML =
+                `<tr><td colspan="7">Error al cargar usuarios.</td></tr>`;
+        }
+    }
+
+    async function aplicarPenalizacion(userId) {
+        const token = localStorage.getItem("token");
+        const dias = document.getElementById(`dias-${userId}`).value || 7;
+
+        const response = await fetch(`/api/penalizaciones/${userId}?dias=${dias}`, {
+            method: "PUT",
+            headers: {
+                "Authorization": token
+            }
+        });
+
+        if (response.ok) {
+            alert("Penalización aplicada correctamente.");
+            cargarUsuarios();
+        } else {
+            const error = await response.text();
+            alert("Error al aplicar penalización:\n" + error);
+        }
+    }
+
+    async function quitarPenalizacion(userId) {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(`/api/penalizaciones/${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": token
+            }
+        });
+
+        if (response.ok) {
+            alert("Penalización eliminada correctamente.");
+            cargarUsuarios();
+        } else {
+            const error = await response.text();
+            alert("Error al quitar penalización:\n" + error);
+        }
+    }
+
+    window.addEventListener("load", () => {
+        setTimeout(cargarUsuarios, 300);
+    });
+</script>
+
+</body>
+</html>
