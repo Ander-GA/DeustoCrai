@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis Avisos - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: var(--azul-deusto);
+            margin-bottom: 20px;
+        }
+
+        .aviso {
+            border-left: 6px solid var(--azul-deusto);
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .aviso.no-leido {
+            border-left-color: var(--naranja-deusto);
+            background: #fff8e6;
+        }
+
+        .aviso h3 {
+            margin-bottom: 8px;
+            color: var(--azul-deusto);
+        }
+
+        .tipo {
+            font-weight: bold;
+            color: var(--naranja-deusto);
+        }
+
+        .fecha {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .btn-leido {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: var(--azul-deusto);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-leido:hover {
+            background-color: #002244;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="header-placeholder"></div>
+
+<main class="container">
+    <h2>Mis Avisos</h2>
+    <div id="lista-avisos">
+        <p>Cargando avisos...</p>
+    </div>
+</main>
+
+<script src="js/auth.js"></script>
+
+<script>
+    async function cargarAvisos() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("Debes iniciar sesión para ver tus avisos.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/avisos", {
+                headers: {
+                    "Authorization": token
+                }
+            });
+
+            if (!response.ok) {
+                document.getElementById("lista-avisos").innerHTML =
+                    "<p>No se pudieron cargar los avisos.</p>";
+                return;
+            }
+
+            const avisos = await response.json();
+            const lista = document.getElementById("lista-avisos");
+
+            if (avisos.length === 0) {
+                lista.innerHTML = "<p>No tienes avisos.</p>";
+                return;
+            }
+
+            lista.innerHTML = "";
+
+            avisos.forEach(aviso => {
+                const clase = aviso.leido ? "aviso" : "aviso no-leido";
+                const fecha = aviso.fechaCreacion
+                    ? aviso.fechaCreacion.replace("T", " ")
+                    : "-";
+
+                const boton = aviso.leido
+                    ? ""
+                    : `<button class="btn-leido" onclick="marcarLeido(${aviso.id})">Marcar como leído</button>`;
+
+                lista.innerHTML += `
+                    <div class="${clase}">
+                        <h3>${aviso.titulo}</h3>
+                        <p><span class="tipo">${aviso.tipo}</span></p>
+                        <p>${aviso.mensaje}</p>
+                        <p class="fecha">Fecha: ${fecha}</p>
+                        ${boton}
+                    </div>
+                `;
+            });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("lista-avisos").innerHTML =
+                "<p>Error al conectar con el servidor.</p>";
+        }
+    }
+
+    async function marcarLeido(avisoId) {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(`/api/avisos/${avisoId}/leer`, {
+            method: "PUT",
+            headers: {
+                "Authorization": token
+            }
+        });
+
+        if (response.ok) {
+            cargarAvisos();
+        } else {
+            alert("No se pudo marcar el aviso como leído.");
+        }
+    }
+
+    window.addEventListener("load", () => {
+        setTimeout(cargarAvisos, 300);
+    });
+</script>
+
+</body>
+</html>

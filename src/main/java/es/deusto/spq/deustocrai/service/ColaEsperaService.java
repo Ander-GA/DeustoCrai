@@ -8,6 +8,7 @@ import es.deusto.spq.deustocrai.entity.ColaEspera;
 import es.deusto.spq.deustocrai.entity.ColaEspera.EstadoCola;
 import es.deusto.spq.deustocrai.entity.Prestamo;
 import es.deusto.spq.deustocrai.entity.User;
+import es.deusto.spq.deustocrai.entity.Aviso;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,17 +21,20 @@ public class ColaEsperaService {
     private final AbstractRecursoRepository recursoRepository;
     private final PrestamoRepository prestamoRepository;
     private final NotificacionService notificacionService;
+    private final AvisoService avisoService;
 
     public ColaEsperaService(
             ColaEsperaRepository colaEsperaRepository,
             AbstractRecursoRepository recursoRepository,
             PrestamoRepository prestamoRepository,
-            NotificacionService notificacionService
+            NotificacionService notificacionService,
+            AvisoService avisoService
     ) {
         this.colaEsperaRepository = colaEsperaRepository;
         this.recursoRepository = recursoRepository;
         this.prestamoRepository = prestamoRepository;
         this.notificacionService = notificacionService;
+        this.avisoService = avisoService;
     }
 
     public ColaEspera apuntarseACola(User usuario, Long recursoId) {
@@ -93,6 +97,13 @@ public class ColaEsperaService {
         notificacionService.notificarAsignacionDesdeCola(
                 primeraEntrada.getUsuario(),
                 recurso.getTitulo()
+        );
+
+        avisoService.crearAviso(
+                primeraEntrada.getUsuario(),
+                Aviso.TipoAviso.COLA_ESPERA,
+                "Recurso asignado desde la cola",
+                "El recurso '" + recurso.getTitulo() + "' ha quedado dispponible y se te ha asignado automáticamente."
         );
 
         return Optional.of(prestamoGuardado);

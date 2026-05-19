@@ -19,14 +19,26 @@
         
         <div id="user-menu" class="user-menu" style="display: none;">
             <button onclick="toggleMenu()" class="dropbtn">
-                Hola, <span id="username-display">Usuario</span> <i class="fas fa-chevron-down" style="font-size: 0.8em; margin-left: 5px;"></i>
+                Hola, <span id="username-display">Usuario</span> 
+                <i class="fas fa-chevron-down" style="font-size: 0.8em; margin-left: 5px;"></i>
             </button>
+
             <div id="myDropdown" class="dropdown-content">
 				<a href="mi-perfil.html">Mi Perfil</a> 
-				<a href="panel-bibliotecario.html" id="link-bibliotecario" style="display: none; background-color: #f8f9fa; font-weight: bold;">Panel Bibliotecario</a>
+
+				<a href="panel-bibliotecario.html"
+                   id="link-bibliotecario"
+                   style="display: none; background-color: #f8f9fa; font-weight: bold;">
+                   Panel Bibliotecario
+                </a>
+
                 <a href="mis-reservas.html">Mis Reservas</a> 
                 <a href="mis-prestamos.html">Mis Préstamos</a>
+
+                <a href="avisos.html">Mis Avisos</a>
+
                 <hr>
+
                 <a href="#" onclick="cerrarSesion()">Cerrar Sesión</a>
             </div>
         </div>
