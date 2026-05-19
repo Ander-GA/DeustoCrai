@@ -17,8 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function cargarSalas() {
     try {
-        // Llama al endpoint existente en tu AulaController para listar las salas
-        const response = await fetch("/api/aulas", {
+        // CORRECCIÓN: Cambiado de "/api/aulas" a "/api/salas" para que coincida con el AulaController
+        const response = await fetch("/api/salas", {
             headers: {
                 "Authorization": localStorage.getItem("token")
             }
@@ -80,8 +80,8 @@ async function enviarBloqueo() {
     };
 
     try {
-        // Enlace directo con el endpoint @PostMapping("/{aulaId}/bloquear") del AulaController
-        const response = await fetch(`/api/aulas/${aulaId}/bloquear`, {
+        // CORRECCIÓN: Cambiado de "/api/aulas" a "/api/salas" para la ruta de bloqueo
+        const response = await fetch(`/api/salas/${aulaId}/bloquear`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
