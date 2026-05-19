@@ -19,15 +19,18 @@ public class ColaEsperaService {
     private final ColaEsperaRepository colaEsperaRepository;
     private final AbstractRecursoRepository recursoRepository;
     private final PrestamoRepository prestamoRepository;
+    private final NotificacionService notificacionService;
 
     public ColaEsperaService(
             ColaEsperaRepository colaEsperaRepository,
             AbstractRecursoRepository recursoRepository,
-            PrestamoRepository prestamoRepository
+            PrestamoRepository prestamoRepository,
+            NotificacionService notificacionService
     ) {
         this.colaEsperaRepository = colaEsperaRepository;
         this.recursoRepository = recursoRepository;
         this.prestamoRepository = prestamoRepository;
+        this.notificacionService = notificacionService;
     }
 
     public ColaEspera apuntarseACola(User usuario, Long recursoId) {
@@ -86,6 +89,11 @@ public class ColaEsperaService {
         );
 
         Prestamo prestamoGuardado = prestamoRepository.save(nuevoPrestamo);
+
+        notificacionService.notificarAsignacionDesdeCola(
+                primeraEntrada.getUsuario(),
+                recurso.getTitulo()
+        );
 
         return Optional.of(prestamoGuardado);
     }
