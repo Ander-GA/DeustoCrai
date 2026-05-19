@@ -83,7 +83,19 @@
                 Cargando catálogo...
             </p>
         </div>
-
+		
+		<div id="seccion-valoraciones" style="display: none; margin-top: 30px; padding: 20px; background-color: #f1f4f8; border-radius: 8px;">
+		    <h3 id="titulo-resenas">Valoraciones</h3>
+		    <div id="lista-resenas" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; background: white; padding: 10px;"></div>
+		    <hr>
+		    <h4>Deja tu opinión</h4>
+		    <form id="form-resena" onsubmit="enviarResena(event)">
+		        <input type="hidden" id="resena-recurso-id">
+		        Puntuación (1-5): <input type="number" id="resena-puntuacion" min="1" max="5" required style="width: 50px;">
+		        Comentario: <input type="text" id="resena-comentario" style="width: 60%;">
+		        <button type="submit" class="btn-accion btn-prestar">Publicar Reseña</button>
+		    </form>
+		</div>
     </main>
 
     <script src="js/auth.js"></script>
@@ -166,6 +178,10 @@
                                 <div style="margin-top: 5px;">
                                     Estado: ${estado}
                                 </div>
+								<button onclick="cargarResenas(${libro.id}, '${libro.titulo.replace(/'/g, "\\'")}')" 
+								        style="margin-top: 8px; cursor: pointer; padding: 3px 8px; font-size: 0.8em; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">
+								    ★ Ver Reseñas
+								</button>
 
                             </div>
 
@@ -301,7 +317,45 @@
         window.addEventListener('load', () => {
             setTimeout(cargarLibros, 300);
         });
+	
+		async function cargarResenas(recursoId, titulo) {
+		    document.getElementById('seccion-valoraciones').style.display = 'block';
+		    document.getElementById('titulo-resenas').innerText = "Valoraciones de: " + titulo;
+		    document.getElementById('resena-recurso-id').value = recursoId;
+		    const lista = document.getElementById('lista-resenas');
+		    lista.innerHTML = 'Cargando...';
 
+		    try {
+		        const res = await fetch(`/api/valoraciones/recurso/${recursoId}`);
+		        const resenas = await res.json();
+		        lista.innerHTML = resenas.length > 0 
+		            ? resenas.map(r => `<div style="border-bottom:1px solid #ccc; padding:5px 0;"><strong>${r.usuario.nombre}</strong> (⭐${r.puntuacion}): ${r.comentario||''}</div>`).join('')
+		            : '<p>Este libro aún no tiene valoraciones.</p>';
+		    } catch (e) { lista.innerHTML = 'Error al cargar reseñas.'; }
+		    
+		    document.getElementById('seccion-valoraciones').scrollIntoView({ behavior: 'smooth' });
+		}
+
+		async function enviarResena(event) {
+		    event.preventDefault();
+		    const id = document.getElementById('resena-recurso-id').value;
+		    const p = document.getElementById('resena-puntuacion').value;
+		    const c = document.getElementById('resena-comentario').value;
+		    const token = localStorage.getItem('token');
+
+		    const res = await fetch(`/api/valoraciones/recurso/${id}?puntuacion=${p}&comentario=${encodeURIComponent(c)}`, {
+		        method: 'POST', headers: { 'Authorization': token }
+		    });
+		    
+		    if (res.ok) {
+		        alert("¡Valoración guardada!");
+		        document.getElementById('form-resena').reset();
+		        cargarResenas(id, document.getElementById('titulo-resenas').innerText.replace('Valoraciones de: ', ''));
+		    } else {
+		        const err = await res.json();
+		        alert("Error: " + (err.error || "No se pudo guardar."));
+		    }
+		}
     </script>
 
 </body>

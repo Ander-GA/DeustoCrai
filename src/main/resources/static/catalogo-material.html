@@ -22,7 +22,20 @@
         <div id="lista-materiales">
             <p style="text-align: center;">Cargando materiales...</p>
         </div>
-    </main>
+
+        <div id="seccion-valoraciones" style="display: none; margin-top: 30px; padding: 20px; background-color: #f1f4f8; border-radius: 8px;">
+            <h3 id="titulo-resenas">Valoraciones del material</h3>
+            <div id="lista-resenas" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; background: white; padding: 10px;"></div>
+            <hr>
+            <h4>Deja tu opinión</h4>
+            <form id="form-resena" onsubmit="enviarResena(event)">
+                <input type="hidden" id="resena-recurso-id">
+                Puntuación (1-5): <input type="number" id="resena-puntuacion" min="1" max="5" required style="width: 50px; margin-bottom: 10px;"><br>
+                Comentario: <textarea id="resena-comentario" rows="2" style="width: 100%; margin-bottom: 10px;"></textarea><br>
+                <button type="submit" class="btn-prestar" style="background-color: #28a745;">Publicar Reseña</button>
+            </form>
+        </div>
+        </main>
 
 <script src="js/auth.js"></script>
 
@@ -52,7 +65,8 @@
                         <div class="material-item">
                             <div>
                                 <a href="detalle-material.html?id=${m.id}"><strong>${m.titulo}</strong></a><br>
-                                <small>Tipo: ${m.tipo} | S/N: ${m.numeroSerie}</small>
+                                <small>Tipo: ${m.tipo} | S/N: ${m.numeroSerie}</small><br>
+                                <button onclick="cargarResenas(${m.id}, '${m.titulo.replace(/'/g, "\\'")}')" style="margin-top: 5px; cursor: pointer; padding: 3px 8px; font-size: 0.85em; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;">★ Ver Reseñas</button>
                                 <div style="margin-top:5px;">${estado}</div>
                             </div>
                             <div>${btnAccion}</div>
@@ -97,6 +111,57 @@
                 console.error('Error en la petición:', e);
                 alert('Error de conexión con el servidor.');
             }
+        }
+
+        //NUEVAS FUNCIONES AÑADIDAS: CARGAR Y ENVIAR RESEÑAS
+        async function cargarResenas(recursoId, tituloRecurso) {
+            document.getElementById('seccion-valoraciones').style.display = 'block';
+            document.getElementById('titulo-resenas').innerText = "Valoraciones de: " + tituloRecurso;
+            document.getElementById('resena-recurso-id').value = recursoId;
+            const lista = document.getElementById('lista-resenas');
+            lista.innerHTML = 'Cargando...';
+
+            try {
+                const response = await fetch(`/api/valoraciones/recurso/${recursoId}`);
+                if (response.ok) {
+                    const resenas = await response.json();
+                    if (resenas.length === 0) {
+                        lista.innerHTML = '<p>Este material aún no tiene valoraciones.</p>';
+                    } else {
+                        lista.innerHTML = resenas.map(r => 
+                            `<div style="border-bottom: 1px solid #ccc; padding: 5px 0;">
+                                <strong>${r.usuario.nombre}</strong> (⭐${r.puntuacion}): <em>${r.comentario || ''}</em>
+                            </div>`
+                        ).join('');
+                    }
+                }
+            } catch (e) { lista.innerHTML = 'Error al cargar reseñas.'; }
+            
+            document.getElementById('seccion-valoraciones').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function enviarResena(event) {
+            event.preventDefault();
+            const recursoId = document.getElementById('resena-recurso-id').value;
+            const puntuacion = document.getElementById('resena-puntuacion').value;
+            const comentario = document.getElementById('resena-comentario').value;
+            const token = localStorage.getItem('token');
+
+            if (!token) return alert("Inicia sesión para valorar.");
+
+            try {
+                const url = `/api/valoraciones/recurso/${recursoId}?puntuacion=${puntuacion}&comentario=${encodeURIComponent(comentario)}`;
+                const response = await fetch(url, { method: 'POST', headers: { 'Authorization': token } });
+
+                if (response.ok) {
+                    alert("¡Valoración guardada!");
+                    document.getElementById('form-resena').reset();
+                    cargarResenas(recursoId, document.getElementById('titulo-resenas').innerText.replace('Valoraciones de: ', ''));
+                } else {
+                    const err = await response.json();
+                    alert("Error: " + (err.error || "No se pudo guardar."));
+                }
+            } catch (e) { alert("Error de conexión."); }
         }
 
         window.onload = () => {
