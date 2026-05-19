@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estadísticas - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: var(--azul-deusto);
+            margin-bottom: 25px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-left: 6px solid var(--azul-deusto);
+            padding: 18px;
+            border-radius: 6px;
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 2rem;
+            color: var(--azul-deusto);
+        }
+
+        .stat-card span {
+            color: #555;
+            font-weight: bold;
+        }
+
+        .warning {
+            border-left-color: var(--naranja-deusto);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: var(--azul-deusto);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="header-placeholder"></div>
+
+<main class="container">
+    <h2>Panel de Estadísticas</h2>
+
+    <div id="stats" class="stats-grid">
+        <p>Cargando estadísticas...</p>
+    </div>
+
+    <h3>Recursos más solicitados</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Recurso</th>
+                <th>Solicitudes / préstamos</th>
+            </tr>
+        </thead>
+        <tbody id="tabla-recursos">
+            <tr>
+                <td colspan="2">Cargando datos...</td>
+            </tr>
+        </tbody>
+    </table>
+</main>
+
+<script src="js/auth.js"></script>
+
+<script>
+    async function cargarEstadisticas() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("Debes iniciar sesión como administrador o bibliotecario.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/estadisticas", {
+                headers: {
+                    "Authorization": token
+                }
+            });
+
+            if (response.status === 403) {
+                document.getElementById("stats").innerHTML =
+                    "<p>No tienes permisos para ver estadísticas.</p>";
+                document.getElementById("tabla-recursos").innerHTML =
+                    "<tr><td colspan='2'>Acceso denegado.</td></tr>";
+                return;
+            }
+
+            const data = await response.json();
+
+            document.getElementById("stats").innerHTML = `
+                <div class="stat-card">
+                    <strong>${data.usuariosTotales}</strong>
+                    <span>Usuarios totales</span>
+                </div>
+
+                <div class="stat-card warning">
+                    <strong>${data.usuariosPenalizados}</strong>
+                    <span>Usuarios penalizados</span>
+                </div>
+
+                <div class="stat-card">
+                    <strong>${data.librosTotales}</strong>
+                    <span>Libros</span>
+                </div>
+
+                <div class="stat-card">
+                    <strong>${data.materialesTotales}</strong>
+                    <span>Materiales</span>
+                </div>
+
+                <div class="stat-card">
+                    <strong>${data.prestamosTotales}</strong>
+                    <span>Préstamos totales</span>
+                </div>
+
+                <div class="stat-card warning">
+                    <strong>${data.prestamosActivos}</strong>
+                    <span>Préstamos activos</span>
+                </div>
+
+                <div class="stat-card">
+                    <strong>${data.reservasTotales}</strong>
+                    <span>Reservas de salas</span>
+                </div>
+
+                <div class="stat-card warning">
+                    <strong>${data.avisosNoLeidos}</strong>
+                    <span>Avisos no leídos</span>
+                </div>
+            `;
+
+            const tabla = document.getElementById("tabla-recursos");
+            tabla.innerHTML = "";
+
+            const recursos = data.recursosSolicitados || {};
+            const entradas = Object.entries(recursos);
+
+            if (entradas.length === 0) {
+                tabla.innerHTML = "<tr><td colspan='2'>Aún no hay recursos solicitados.</td></tr>";
+                return;
+            }
+
+            entradas
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([nombre, total]) => {
+                    tabla.innerHTML += `
+                        <tr>
+                            <td>${nombre}</td>
+                            <td>${total}</td>
+                        </tr>
+                    `;
+                });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("stats").innerHTML =
+                "<p>Error al cargar estadísticas.</p>";
+        }
+    }
+
+    window.addEventListener("load", () => {
+        setTimeout(cargarEstadisticas, 300);
+    });
+</script>
+
+</body>
+</html>

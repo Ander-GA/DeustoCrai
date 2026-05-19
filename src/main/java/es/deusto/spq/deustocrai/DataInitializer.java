@@ -20,6 +20,7 @@ import es.deusto.spq.deustocrai.dao.PrestamoRepository;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
+import es.deusto.spq.deustocrai.dao.AvisoRepository;
 
 // IMPORTAMOS LOS NUEVOS DAO Y ENTIDADES
 import es.deusto.spq.deustocrai.dao.InstalacionRepository; 
@@ -41,6 +42,7 @@ public class DataInitializer {
             PrestamoRepository prestamoRepository,
             InstalacionRepository instalacionRepository,
             ReservaInstalacionRepository reservaInstalacionRepository,
+            AvisoRepository avisoRepository,
             ColaEsperaRepository colaEsperaRepository) { // <-- LO INYECTAMOS AQUÍ
 
         return args -> {
@@ -49,6 +51,7 @@ public class DataInitializer {
             prestamoRepository.deleteAll();
             reservaRepository.deleteAll();
             colaEsperaRepository.deleteAll();
+            avisoRepository.deleteAll();
             userRepository.deleteAll();
             libroRepository.deleteAll();
             aulaRepository.deleteAll();
