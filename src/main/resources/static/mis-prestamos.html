@@ -50,7 +50,10 @@
                                 Fecha de préstamo: ${p.fechaPrestamo}<br>
                                 Devolución prevista: ${p.fechaDevolucionPrevista}
                             </div>
-                            <button class="btn-devolver" onclick="devolverLibro(${p.id})">Devolver Recurso</button>
+                            <div>
+                                <button class="btn-devolver" onclick="devolverLibro(${p.id})">Devolver Recurso</button>
+                                <button class="btn-devolver" style="background-color: #6c757d; margin-left: 10px;" onclick="renovarPrestamo(${p.id})">Renovar</button>
+                            </div>
                         </div>`;
                 });
             } catch (e) { console.error(e); }
@@ -68,6 +71,31 @@
                 cargarMisPrestamos();
             } else {
                 alert("Error al devolver el recurso.");
+            }
+        }
+
+        async function renovarPrestamo(prestamoId) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            if (confirm("¿Quieres solicitar una renovación de 7 días para este préstamo?")) {
+                try {
+                    const response = await fetch(`/api/prestamos/${prestamoId}/renovar`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': token }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert(result.mensaje || "Préstamo renovado con éxito.");
+                        cargarMisPrestamos(); // Recarga la lista para ver la nueva fecha
+                    } else {
+                        const result = await response.json();
+                        alert("No se pudo renovar: " + (result.error || "Error desconocido"));
+                    }
+                } catch (e) {
+                    alert("Ocurrió un error al conectar con el servidor.");
+                }
             }
         }
 
