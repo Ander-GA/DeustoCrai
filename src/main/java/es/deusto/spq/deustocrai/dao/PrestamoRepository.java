@@ -17,6 +17,9 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     
     @Query("SELECT p FROM Prestamo p WHERE p.estado != 'DEVUELTO' AND TYPE(p.recurso) = Libro")
     List<Prestamo> findLibrosPrestadosActivos();
+
+    @Query("SELECT p FROM Prestamo p WHERE p.estado != 'DEVUELTO' AND TYPE(p.recurso) = Material")
+    List<Prestamo> findMaterialesPrestadosActivos();
     
     List<Prestamo> findByUsuarioIdAndEstado(Long usuarioId, Prestamo.EstadoPrestamo estado);
 }

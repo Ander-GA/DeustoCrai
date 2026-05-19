@@ -132,6 +132,10 @@ public class PrestamoService {
         return prestamoRepository.findLibrosPrestadosActivos();
     }
 
+    public List<Prestamo> obtenerPrestamosMaterialesActivos() {
+        return prestamoRepository.findMaterialesPrestadosActivos();
+    }
+
     @Autowired
     private ColaEsperaService colaEsperaService;
     

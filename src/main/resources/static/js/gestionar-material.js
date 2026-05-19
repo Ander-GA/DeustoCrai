@@ -4,33 +4,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = 'login.html';
         return;
     }
-    cargarPrestamos();
+    cargarPrestamosMaterial();
 });
 
-async function cargarPrestamos() {
+async function cargarPrestamosMaterial() {
     const token = localStorage.getItem('token');
-    const tbody = document.getElementById('tbody-prestamos');
-    
-    // Determinación dinámica del endpoint según la URL
-    let endpoint = '/api/prestamos/todos'; // Fallback
-    const path = window.location.pathname;
-    
-    if (path.includes('gestionar-prestamo-material')) {
-        endpoint = '/api/prestamos/materiales-activos';
-    } else if (path.includes('gestionar-prestamo-libros')) {
-        endpoint = '/api/prestamos/libros-activos';
-    }
+    const tbody = document.getElementById('tbody-prestamos-material');
 
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetch('/api/prestamos/todos', {
             method: 'GET',
             headers: { 'Authorization': token }
         });
 
         if (response.ok) {
             const prestamos = await response.json();
-            // Ya no es necesario filtrar en el cliente; el backend devuelve la lista correcta
-            pintarTabla(prestamos);
+
+            // Filtramos SOLO préstamos de material (material !== null)
+            const soloMaterial = prestamos.filter(p => p.material != null);
+
+            pintarTablaMaterial(soloMaterial);
         } else if (response.status === 403) {
             alert("Acceso denegado. No tienes permisos de Bibliotecario.");
             window.location.href = 'index.html';
@@ -43,33 +36,36 @@ async function cargarPrestamos() {
     }
 }
 
-function pintarTabla(prestamos) {
-    const tbody = document.getElementById('tbody-prestamos');
+function pintarTablaMaterial(prestamos) {
+    const tbody = document.getElementById('tbody-prestamos-material');
     tbody.innerHTML = '';
 
     if (prestamos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No hay préstamos activos registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No hay préstamos de material registrados.</td></tr>';
         return;
     }
 
     prestamos.forEach(p => {
-        // Lógica de nombre del recurso mejorada
-        let nombreRecurso = "Desconocido";
-        if (p.recurso) {
-            nombreRecurso = p.recurso.titulo || p.recurso.nombre || "Sin título";
+        // Nombre del material con protección ante nulls
+        let nombreMaterial = "Desconocido";
+        if (p.material) {
+            nombreMaterial = p.material.nombre || p.material.titulo || "Sin nombre";
         } else if (p.nombreRecursoHistorico) {
-            nombreRecurso = p.nombreRecursoHistorico + " (Eliminado)";
+            nombreMaterial = p.nombreRecursoHistorico + " (Eliminado)";
         }
 
         const estadoActual = p.estado || 'PENDIENTE_ENTREGA';
-        let claseEstado = `estado-${estadoActual.toLowerCase().replace('_', '-')}`;
+        let claseEstado = '';
         let botonesAccion = '';
 
         if (estadoActual === 'PENDIENTE_ENTREGA') {
-            botonesAccion = `<button class="btn-action btn-entregar" onclick="cambiarEstado(${p.id}, 'ENTREGADO')">Dar al Estudiante</button>`;
+            claseEstado = 'estado-pendiente';
+            botonesAccion = `<button class="btn-action btn-entregar" onclick="cambiarEstadoMaterial(${p.id}, 'ENTREGADO')">Dar al Estudiante</button>`;
         } else if (estadoActual === 'ENTREGADO') {
-            botonesAccion = `<button class="btn-action btn-devolver" onclick="cambiarEstado(${p.id}, 'DEVUELTO')">Marcar Devuelto</button>`;
+            claseEstado = 'estado-entregado';
+            botonesAccion = `<button class="btn-action btn-devolver" onclick="cambiarEstadoMaterial(${p.id}, 'DEVUELTO')">Marcar Devuelto</button>`;
         } else if (estadoActual === 'DEVUELTO') {
+            claseEstado = 'estado-devuelto';
             botonesAccion = `<em>Finalizado</em>`;
         }
 
@@ -77,7 +73,7 @@ function pintarTabla(prestamos) {
         tr.innerHTML = `
             <td>${p.id}</td>
             <td>${p.usuario?.email || p.usuario?.nombre || '—'}</td>
-            <td>${nombreRecurso}</td>
+            <td>${nombreMaterial}</td>
             <td>${p.fechaPrestamo || '—'}</td>
             <td>${p.fechaDevolucionPrevista || '—'}</td>
             <td class="${claseEstado}">${estadoActual.replace('_', ' ')}</td>
@@ -87,7 +83,7 @@ function pintarTabla(prestamos) {
     });
 }
 
-async function cambiarEstado(prestamoId, nuevoEstado) {
+async function cambiarEstadoMaterial(prestamoId, nuevoEstado) {
     const token = localStorage.getItem('token');
     if (!confirm(`¿Seguro que quieres marcar este préstamo como "${nuevoEstado.replace('_', ' ')}"?`)) return;
 
@@ -98,7 +94,7 @@ async function cambiarEstado(prestamoId, nuevoEstado) {
         });
 
         if (response.ok) {
-            cargarPrestamos(); // Recarga la tabla manteniendo el contexto (libros o materiales)
+            cargarPrestamosMaterial(); // Recarga la tabla sin hacer location.reload()
         } else {
             alert("Hubo un error al actualizar el estado. Código: " + response.status);
         }

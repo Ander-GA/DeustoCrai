@@ -187,7 +187,28 @@ public class PrestamoController {
         
         return ResponseEntity.ok(prestamoService.obtenerPrestamosLibrosActivos());
     }
-    
+    @Operation(summary = "Listar materiales activos", description = "Lista los préstamos de materiales que no están devueltos.")
+    @GetMapping("/materiales-activos")
+    public ResponseEntity<?> obtenerMaterialesActivos(
+            @Parameter(in = ParameterIn.HEADER, name = "Token-Auth", required = true)
+            @RequestHeader(value = "Token-Auth", required = false) String tokenSwagger,
+            @RequestHeader(value = "Authorization", required = false) String tokenReal) {
+        
+        String token = (tokenReal != null && !tokenReal.isEmpty()) ? tokenReal : tokenSwagger;
+
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se ha recibido el token de autorización.");
+        }
+
+        User user = authService.getEmpleadoByToken(token);
+        
+        // Verificamos permisos
+        if (user == null || (user.getRole() != User.Role.BIBLIOTECARIO && user.getRole() != User.Role.ADMIN)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Acceso denegado: Se requieren permisos de Bibliotecario o Admin.");
+        }
+        
+        return ResponseEntity.ok(prestamoService.obtenerPrestamosMaterialesActivos());
+    }
     @Operation(summary = "Ver estadísticas de uso", description = "Muestra el total de préstamos, activos, devueltos a tiempo y con retraso.")
     @GetMapping("/mis-estadisticas")
     public ResponseEntity<?> misEstadisticas(
