@@ -22,6 +22,7 @@ import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.entity.Libro;
 import es.deusto.spq.deustocrai.dao.ColaEsperaRepository;
 import es.deusto.spq.deustocrai.dao.AvisoRepository;
+import es.deusto.spq.deustocrai.dao.ControlCalidadRepository;
 
 // IMPORTAMOS LOS NUEVOS DAO Y ENTIDADES
 import es.deusto.spq.deustocrai.dao.InstalacionRepository; 
@@ -45,21 +46,22 @@ public class DataInitializer {
             ReservaInstalacionRepository reservaInstalacionRepository,
             AvisoRepository avisoRepository,
             ColaEsperaRepository colaEsperaRepository,
-            ValoracionRepository valoracionRepository) { 
+            ValoracionRepository valoracionRepository,
+            ControlCalidadRepository controlCalidadRepository) { 
 
         return args -> {
             // 1. Limpiar datos previos en el orden correcto (primero los hijos, luego los padres)
-            reservaInstalacionRepository.deleteAll(); 
-            prestamoRepository.deleteAll();
-            reservaRepository.deleteAll();
-            colaEsperaRepository.deleteAll();
-            avisoRepository.deleteAll();
-            valoracionRepository.deleteAll();
-            userRepository.deleteAll();
-            libroRepository.deleteAll();
-            aulaRepository.deleteAll();
-            materialRepository.deleteAll(); 
-            instalacionRepository.deleteAll(); 
+            reservaInstalacionRepository.deleteAll();
+        prestamoRepository.deleteAll();
+        reservaRepository.deleteAll();
+        colaEsperaRepository.deleteAll();
+        avisoRepository.deleteAll();
+        controlCalidadRepository.deleteAll();
+        userRepository.deleteAll();
+        libroRepository.deleteAll();
+        aulaRepository.deleteAll();
+        materialRepository.deleteAll();
+        instalacionRepository.deleteAll();
 
             // 2. Crear Usuarios
             User ander = new User();

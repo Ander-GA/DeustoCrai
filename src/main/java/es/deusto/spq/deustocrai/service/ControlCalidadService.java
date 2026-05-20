@@ -41,6 +41,10 @@ public class ControlCalidadService {
         Material material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Material no encontrado"));
 
+        if (observaciones == null || observaciones.isBlank()) {
+            observaciones = "Sin observaciones";
+        }
+
         Prestamo prestamo = null;
 
         if (prestamoId != null) {
@@ -61,12 +65,23 @@ public class ControlCalidadService {
         } else {
             material.setDisponible(false);
 
+            String mensajeAviso;
+
+            if (estado == EstadoControl.ROTO) {
+                mensajeAviso = "El material '" + material.getTitulo()
+                        + "' ha sido marcado como ROTO. Observaciones: "
+                        + observaciones;
+            } else {
+                mensajeAviso = "El material '" + material.getTitulo()
+                        + "' ha sido enviado a REPARACIÓN. Observaciones: "
+                        + observaciones;
+            }
+
             avisoService.crearAviso(
                     bibliotecario,
                     Aviso.TipoAviso.RECORDATORIO_DEVOLUCION,
-                    "Incidencia en control de calidad",
-                    "El material '" + material.getTitulo() + "' ha sido marcado como " + estado +
-                            ". Observaciones: " + observaciones
+                    "Incidencia detectada en material tecnológico",
+                    mensajeAviso
             );
         }
 

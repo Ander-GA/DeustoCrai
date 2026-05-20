@@ -10,7 +10,8 @@ public class Aviso {
     public enum TipoAviso {
         PENALIZACION,
         COLA_ESPERA,
-        RECORDATORIO_DEVOLUCION
+        RECORDATORIO_DEVOLUCION,
+        INCIDENCIA_MATERIAL
     }
 
     @Id
