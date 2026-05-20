@@ -3,6 +3,7 @@ package es.deusto.spq.deustocrai.facade;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,6 +11,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -170,5 +173,116 @@ public class InstalacionControllerTest {
                 .header("Authorization", "token-biblio")
                 .param("estado", "RECHAZADA"))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- TESTS GET /eventos ---
+    @Test
+    @DisplayName("GET /eventos - Retorna la lista de eventos del calendario")
+    public void testObtenerEventosCalendario() throws Exception {
+        Map<String, Object> evento = new HashMap<>();
+        evento.put("title", "Partido Padel");
+        when(instalacionService.obtenerEventosCalendario()).thenReturn(Arrays.asList(evento));
+
+        mockMvc.perform(get("/api/deportes/eventos"))
+                .andExpect(status().isOk());
+    }
+
+    // --- TESTS GET /mis-reservas ---
+    @Test
+    @DisplayName("GET /mis-reservas - Retorna 200 OK con las reservas del usuario")
+    public void testGetMisReservasExito() throws Exception {
+        when(authService.getEmpleadoByToken("token-valido")).thenReturn(estudiante);
+        when(reservaRepo.findByUsuario(estudiante)).thenReturn(Arrays.asList(reservaMock));
+
+        mockMvc.perform(get("/api/deportes/mis-reservas")
+                .header("Authorization", "token-valido"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /mis-reservas - Retorna 401 Unauthorized si el token no es válido")
+    public void testGetMisReservasNoAutorizado() throws Exception {
+        when(authService.getEmpleadoByToken("token-invalido")).thenReturn(null);
+
+        mockMvc.perform(get("/api/deportes/mis-reservas")
+                .header("Authorization", "token-invalido"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- TESTS DELETE /mis-reservas/{id} (CANCELAR) ---
+    @Test
+    @DisplayName("DELETE /mis-reservas/{id} - Retorna 200 OK al cancelar reserva")
+    public void testCancelarMiReservaExito() throws Exception {
+        when(authService.getEmpleadoByToken("token-valido")).thenReturn(estudiante);
+        when(instalacionService.cancelarReservaUsuario(100L, estudiante.getId())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/deportes/mis-reservas/100")
+                .header("Authorization", "token-valido"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Reserva cancelada correctamente."));
+    }
+
+    @Test
+    @DisplayName("DELETE /mis-reservas/{id} - Retorna 403 Forbidden si no se pudo cancelar")
+    public void testCancelarMiReservaFallo() throws Exception {
+        when(authService.getEmpleadoByToken("token-valido")).thenReturn(estudiante);
+        when(instalacionService.cancelarReservaUsuario(100L, estudiante.getId())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/deportes/mis-reservas/100")
+                .header("Authorization", "token-valido"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("No se pudo cancelar la reserva."));
+    }
+
+    @Test
+    @DisplayName("DELETE /mis-reservas/{id} - Retorna 401 si el usuario no es válido")
+    public void testCancelarMiReservaNoAutorizado() throws Exception {
+        when(authService.getEmpleadoByToken("token-invalido")).thenReturn(null);
+
+        mockMvc.perform(delete("/api/deportes/mis-reservas/100")
+                .header("Authorization", "token-invalido"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- TESTS PUT /mis-reservas/{id} (MODIFICAR) ---
+    @Test
+    @DisplayName("PUT /mis-reservas/{id} - Retorna 200 OK al modificar reserva")
+    public void testModificarMiReservaExito() throws Exception {
+        when(authService.getEmpleadoByToken("token-valido")).thenReturn(estudiante);
+        when(instalacionService.modificarReservaUsuario(eq(100L), eq(estudiante.getId()), any(), any())).thenReturn("OK");
+
+        mockMvc.perform(put("/api/deportes/mis-reservas/100")
+                .header("Authorization", "token-valido")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(reservaMock)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Reserva modificada correctamente."));
+    }
+
+    @Test
+    @DisplayName("PUT /mis-reservas/{id} - Retorna 400 Bad Request si la modificación falla")
+    public void testModificarMiReservaFallo() throws Exception {
+        when(authService.getEmpleadoByToken("token-valido")).thenReturn(estudiante);
+        // Simulamos que el horario ya está ocupado
+        when(instalacionService.modificarReservaUsuario(eq(100L), eq(estudiante.getId()), any(), any())).thenReturn("Horario no disponible");
+
+        mockMvc.perform(put("/api/deportes/mis-reservas/100")
+                .header("Authorization", "token-valido")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(reservaMock)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Horario no disponible"));
+    }
+
+    @Test
+    @DisplayName("PUT /mis-reservas/{id} - Retorna 401 si no hay usuario válido")
+    public void testModificarMiReservaNoAutorizado() throws Exception {
+        when(authService.getEmpleadoByToken("token-invalido")).thenReturn(null);
+
+        mockMvc.perform(put("/api/deportes/mis-reservas/100")
+                .header("Authorization", "token-invalido")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(reservaMock)))
+                .andExpect(status().isUnauthorized());
     }
 }
