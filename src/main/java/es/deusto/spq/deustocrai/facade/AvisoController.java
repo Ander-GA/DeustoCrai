@@ -48,7 +48,7 @@ public class AvisoController {
     @PutMapping("/{avisoId}/leer")
     public ResponseEntity<?> marcarComoLeido(
             @RequestHeader(value = "Authorization", required = false) String token,
-            @PathVariable Long avisoId
+            @PathVariable("avisoId") Long avisoId
     ) {
         User usuario = authService.getEmpleadoByToken(token);
 
