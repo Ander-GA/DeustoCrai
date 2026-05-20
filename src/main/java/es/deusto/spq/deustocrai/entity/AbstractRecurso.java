@@ -27,4 +27,5 @@ public abstract class AbstractRecurso {
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public boolean isDisponible() { return disponible; }
     public void setDisponible(boolean disponible) { this.disponible = disponible; }
+    public void setId(Long id) {this.id = id;}
 }
