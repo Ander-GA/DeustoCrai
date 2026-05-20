@@ -35,20 +35,20 @@ public class PrestamoService {
     private ColaEsperaService colaEsperaService;
 
     @Autowired
-    private ColaEsperaRepository colaEsperaRepository; // Añadido para validar la cola en la renovación
+    private ColaEsperaRepository colaEsperaRepository;
 
     public List<Prestamo> obtenerPrestamosPorUsuario(User usuario) {
-    	List<Prestamo> todosLosPrestamos = prestamoRepository.findByUsuarioId(usuario.getId());
-    	
+        List<Prestamo> todosLosPrestamos = prestamoRepository.findByUsuarioId(usuario.getId());
+        
         return todosLosPrestamos.stream()
-				.filter(prestamo -> prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO)
-				.toList();
+                .filter(prestamo -> prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO)
+                .toList();
     }
     
     public List<Prestamo> obtenerHistorialPorUsuario(User usuario) {
         return prestamoRepository.findByUsuarioIdAndEstado(
-            usuario.getId(),
-            Prestamo.EstadoPrestamo.DEVUELTO
+                usuario.getId(),
+                Prestamo.EstadoPrestamo.DEVUELTO
         );
     }
 
@@ -67,6 +67,7 @@ public class PrestamoService {
             Prestamo prestamo = new Prestamo(usuario, libro);
             return prestamoRepository.save(prestamo);
         }
+
         return null; 
     }
 
@@ -76,20 +77,30 @@ public class PrestamoService {
         if (prestamoOpt.isPresent()) {
             Prestamo prestamo = prestamoOpt.get();
             
-            if (prestamo.getUsuario().getId().equals(usuario.getId()) && prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
+            if (prestamo.getUsuario().getId().equals(usuario.getId()) &&
+                    prestamo.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
+
                 if (prestamo.getRecurso() instanceof Libro) {
-					Libro libro = (Libro) prestamo.getRecurso();
-					colaEsperaService.asignarPrimerUsuarioSiExiste(libro);
-				}else if(prestamo.getRecurso() instanceof Material) {
-					Material material = (Material) prestamo.getRecurso();
-					colaEsperaService.asignarPrimerUsuarioSiExiste(material);
-				}
+                    Libro libro = (Libro) prestamo.getRecurso();
+                    colaEsperaService.asignarPrimerUsuarioSiExiste(libro);
+
+                } else if (prestamo.getRecurso() instanceof Material) {
+                    Material material = (Material) prestamo.getRecurso();
+
+                    // El material tecnológico queda pendiente de control de calidad.
+                    // No vuelve automáticamente al catálogo disponible.
+                    material.setDisponible(false);
+                    materialRepository.save(material);
+                }
+
                 prestamo.setFechaDevolucionReal(LocalDate.now());
-				prestamo.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
-				prestamoRepository.save(prestamo);
-				return true;
-				}
+                prestamo.setEstado(Prestamo.EstadoPrestamo.DEVUELTO);
+                prestamoRepository.save(prestamo);
+
+                return true;
             }
+        }
+
         return false;
     }
 
@@ -101,19 +112,25 @@ public class PrestamoService {
             prestamo.setEstado(nuevoEstado);
             
             if (nuevoEstado == Prestamo.EstadoPrestamo.DEVUELTO) {
-            	prestamo.setFechaDevolucionReal(LocalDate.now());
+                prestamo.setFechaDevolucionReal(LocalDate.now());
+
                 if (prestamo.getRecurso() instanceof Libro) {
-                	Libro libro = (Libro) prestamo.getRecurso();
-                	colaEsperaService.asignarPrimerUsuarioSiExiste(libro);
-                }else if(prestamo.getRecurso() instanceof Material) {
-					Material material = (Material) prestamo.getRecurso();
-					colaEsperaService.asignarPrimerUsuarioSiExiste(material);
-				}
+                    Libro libro = (Libro) prestamo.getRecurso();
+                    colaEsperaService.asignarPrimerUsuarioSiExiste(libro);
+
+                } else if (prestamo.getRecurso() instanceof Material) {
+                    Material material = (Material) prestamo.getRecurso();
+
+                    // El material tecnológico queda pendiente de control de calidad.
+                    material.setDisponible(false);
+                    materialRepository.save(material);
+                }
             }
             
             prestamoRepository.save(prestamo);
             return true;
         }
+
         return false;
     }
 
@@ -128,6 +145,7 @@ public class PrestamoService {
             Prestamo prestamo = new Prestamo(usuario, material);
             return prestamoRepository.save(prestamo);
         }
+
         return null; 
     }
     
@@ -151,7 +169,8 @@ public class PrestamoService {
             if (p.getEstado() != Prestamo.EstadoPrestamo.DEVUELTO) {
                 activos++;
             } else {
-                if (p.getFechaDevolucionReal() != null && p.getFechaDevolucionReal().isAfter(p.getFechaDevolucionPrevista())) {
+                if (p.getFechaDevolucionReal() != null &&
+                        p.getFechaDevolucionReal().isAfter(p.getFechaDevolucionPrevista())) {
                     conRetraso++;
                 } else {
                     aTiempo++; 
@@ -168,7 +187,6 @@ public class PrestamoService {
         return estadisticas;
     }
 
-    // --- NUEVA LÓGICA DE RENOVACIÓN DE PRÉSTAMO ---
     @Transactional
     public Prestamo renovarPrestamo(Long prestamoId, User usuarioAutenticado) {
         Prestamo prestamo = prestamoRepository.findById(prestamoId)
@@ -183,7 +201,7 @@ public class PrestamoService {
         }
         
         if (prestamo.getFechaDevolucionPrevista().isBefore(LocalDate.now())) {
-             throw new IllegalStateException("El préstamo ya está vencido, debes devolverlo y pagar penalización si aplica.");
+            throw new IllegalStateException("El préstamo ya está vencido, debes devolverlo y pagar penalización si aplica.");
         }
 
         List<ColaEspera> cola = colaEsperaRepository.findByRecursoIdAndEstadoOrderByFechaEntradaAsc(
@@ -195,7 +213,6 @@ public class PrestamoService {
             throw new IllegalStateException("No puedes renovar el material porque hay usuarios en lista de espera");
         }
 
-        // Extender el préstamo 7 días más desde la fecha de fin prevista
         prestamo.setFechaDevolucionPrevista(prestamo.getFechaDevolucionPrevista().plusDays(7));
         return prestamoRepository.save(prestamo);
     }
