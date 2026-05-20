@@ -3,6 +3,7 @@ package es.deusto.spq.deustocrai.service;
 import es.deusto.spq.deustocrai.dao.ControlCalidadRepository;
 import es.deusto.spq.deustocrai.dao.MaterialRepository;
 import es.deusto.spq.deustocrai.dao.PrestamoRepository;
+import es.deusto.spq.deustocrai.entity.Aviso;
 import es.deusto.spq.deustocrai.entity.ControlCalidad;
 import es.deusto.spq.deustocrai.entity.ControlCalidad.EstadoControl;
 import es.deusto.spq.deustocrai.entity.Material;
@@ -16,15 +17,18 @@ public class ControlCalidadService {
     private final ControlCalidadRepository controlCalidadRepository;
     private final MaterialRepository materialRepository;
     private final PrestamoRepository prestamoRepository;
+    private final AvisoService avisoService;
 
     public ControlCalidadService(
             ControlCalidadRepository controlCalidadRepository,
             MaterialRepository materialRepository,
-            PrestamoRepository prestamoRepository
+            PrestamoRepository prestamoRepository,
+            AvisoService avisoService
     ) {
         this.controlCalidadRepository = controlCalidadRepository;
         this.materialRepository = materialRepository;
         this.prestamoRepository = prestamoRepository;
+        this.avisoService = avisoService;
     }
 
     public ControlCalidad registrarControl(
@@ -56,6 +60,14 @@ public class ControlCalidadService {
             material.setDisponible(true);
         } else {
             material.setDisponible(false);
+
+            avisoService.crearAviso(
+                    bibliotecario,
+                    Aviso.TipoAviso.RECORDATORIO_DEVOLUCION,
+                    "Incidencia en control de calidad",
+                    "El material '" + material.getTitulo() + "' ha sido marcado como " + estado +
+                            ". Observaciones: " + observaciones
+            );
         }
 
         materialRepository.save(material);

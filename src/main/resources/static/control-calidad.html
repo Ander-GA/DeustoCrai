@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Control de Calidad - DeustoCrai</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: var(--azul-deusto);
+            margin-bottom: 20px;
+        }
+
+        .material-card {
+            border-left: 6px solid var(--azul-deusto);
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .material-card h3 {
+            color: var(--azul-deusto);
+            margin-bottom: 8px;
+        }
+
+        select, input {
+            padding: 8px;
+            margin-top: 8px;
+            margin-right: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 9px 14px;
+            background: var(--azul-deusto);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #002244;
+        }
+
+        .estado-disponible {
+            color: green;
+            font-weight: bold;
+        }
+
+        .estado-no-disponible {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="header-placeholder"></div>
+
+<main class="container">
+    <h2>Control de Calidad de Material Tecnológico</h2>
+
+    <p>
+        Registrar si un material devuelto está apto, roto o pendiente de reparación antes de devolverlo al catálogo.
+    </p>
+
+    <br>
+
+    <div id="lista-materiales">
+        <p>Cargando materiales...</p>
+    </div>
+</main>
+
+<script src="js/auth.js"></script>
+
+<script>
+    async function cargarMateriales() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("Debes iniciar sesión como bibliotecario o administrador.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/materiales");
+
+            if (!response.ok) {
+                document.getElementById("lista-materiales").innerHTML =
+                    "<p>Error al cargar materiales.</p>";
+                return;
+            }
+
+            const materiales = await response.json();
+            const lista = document.getElementById("lista-materiales");
+
+            if (materiales.length === 0) {
+                lista.innerHTML = "<p>No hay materiales registrados.</p>";
+                return;
+            }
+
+            lista.innerHTML = "";
+
+            materiales.forEach(material => {
+                const estadoDisponible = material.disponible
+                    ? `<span class="estado-disponible">Disponible</span>`
+                    : `<span class="estado-no-disponible">No disponible / pendiente revisión</span>`;
+
+                lista.innerHTML += `
+                    <div class="material-card">
+                        <h3>${material.titulo}</h3>
+
+                        <p><strong>ID:</strong> ${material.id}</p>
+                        <p><strong>Tipo:</strong> ${material.tipo}</p>
+                        <p><strong>Número de serie:</strong> ${material.numeroSerie}</p>
+                        <p><strong>Estado catálogo:</strong> ${estadoDisponible}</p>
+
+                        <select id="estado-${material.id}">
+                            <option value="APTO">APTO</option>
+                            <option value="ROTO">ROTO</option>
+                            <option value="REPARACION">REPARACIÓN</option>
+                        </select>
+
+                        <input id="observaciones-${material.id}"
+                               type="text"
+                               placeholder="Observaciones">
+
+                        <button class="btn" onclick="registrarControl(${material.id})">
+                            Registrar revisión
+                        </button>
+                    </div>
+                `;
+            });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("lista-materiales").innerHTML =
+                "<p>Error al conectar con el servidor.</p>";
+        }
+    }
+
+    async function registrarControl(materialId) {
+        const token = localStorage.getItem("token");
+
+        const estado = document.getElementById(`estado-${materialId}`).value;
+        const observaciones = document.getElementById(`observaciones-${materialId}`).value;
+
+        const url =
+            `/api/control-calidad?materialId=${materialId}` +
+            `&estado=${estado}` +
+            `&observaciones=${encodeURIComponent(observaciones)}`;
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Authorization": token
+            }
+        });
+
+        if (response.ok) {
+            alert("Control de calidad registrado correctamente.");
+            cargarMateriales();
+        } else {
+            const error = await response.text();
+            alert("Error al registrar control:\n" + error);
+        }
+    }
+
+    window.addEventListener("load", () => {
+        setTimeout(cargarMateriales, 300);
+    });
+</script>
+
+</body>
+</html>
