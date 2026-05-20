@@ -80,14 +80,16 @@ public class AulaController {
     }	
 
     @GetMapping("/usuario/{usuarioId}")
-    public List<Reserva> listarReservasUsuario(@PathVariable Long usuarioId) {
+    public List<Reserva> listarReservasUsuario(
+            @PathVariable("usuarioId") Long usuarioId) {
         return reservaRepository.findAll().stream()
                 .filter(r -> r.getUsuario() != null && r.getUsuario().getId().equals(usuarioId))
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}/reservas")
-    public List<Reserva> consultarReservas(@PathVariable Long id) {
+    public List<Reserva> consultarReservas(
+            @PathVariable("id") Long id) {
         return reservaRepository.findByAulaId(id);
     }
     
@@ -108,7 +110,7 @@ public class AulaController {
     
     @PostMapping("/{aulaId}/bloquear")
     public ResponseEntity<?> bloquearSala(
-            @PathVariable Long aulaId,
+            @PathVariable("aulaId") Long aulaId,
             @RequestBody Map<String, String> payload, 
             @RequestHeader("Authorization") String token) {
 

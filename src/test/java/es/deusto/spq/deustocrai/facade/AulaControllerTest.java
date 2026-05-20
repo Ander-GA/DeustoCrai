@@ -21,14 +21,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.junit.jupiter.api.Tag;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import es.deusto.spq.deustocrai.dao.AulaRepository;
 import es.deusto.spq.deustocrai.dao.BloqueoSalaRepository;
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
 import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
-import es.deusto.spq.deustocrai.entity.BloqueoSala;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import es.deusto.spq.deustocrai.entity.User;
 import es.deusto.spq.deustocrai.service.AuthService;
@@ -40,9 +37,6 @@ public class AulaControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     // Simulamos TODAS las dependencias que el AulaController inyecta
     @MockitoBean private BloqueoSalaRepository bloqueoSalaRepository;
@@ -56,6 +50,10 @@ public class AulaControllerTest {
     private User admin;
     private Aula aula;
     private Reserva reservaMock;
+    
+    // JSON puro para evitar bucles infinitos de Jackson y errores de fecha (400)
+    private final String jsonReserva = "{\"usuario\": {\"id\": 1}, \"aula\": {\"id\": 10}}";
+    private final String jsonBloqueo = "{\"motivo\": \"Obras\", \"fechaInicio\": \"2026-05-25T10:00:00\", \"fechaFin\": \"2026-05-26T10:00:00\"}";
 
     @BeforeEach
     void setUp() {
@@ -69,7 +67,7 @@ public class AulaControllerTest {
         admin.setRole(User.Role.ADMIN);
 
         aula = new Aula();
-        // INYECTAMOS EL ID A LA FUERZA PARA EL TEST:
+        // Inyectamos el ID a la fuerza para el test:
         org.springframework.test.util.ReflectionTestUtils.setField(aula, "id", 10L);
 
         reservaMock = new Reserva();
@@ -94,7 +92,7 @@ public class AulaControllerTest {
 
         mockMvc.perform(post("/api/salas/reservar")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(reservaMock)))
+                .content(jsonReserva))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -108,7 +106,7 @@ public class AulaControllerTest {
 
         mockMvc.perform(post("/api/salas/reservar")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(reservaMock)))
+                .content(jsonReserva))
                 .andExpect(status().isForbidden());
     }
 
@@ -123,7 +121,7 @@ public class AulaControllerTest {
 
         mockMvc.perform(post("/api/salas/reservar")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(reservaMock)))
+                .content(jsonReserva))
                 .andExpect(status().isOk());
     }
 
@@ -135,7 +133,7 @@ public class AulaControllerTest {
 
         mockMvc.perform(post("/api/salas/reservar")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(reservaMock)))
+                .content(jsonReserva))
                 .andExpect(status().isConflict());
     }
 
@@ -165,16 +163,13 @@ public class AulaControllerTest {
     @Test
     @DisplayName("POST /bloquear - Éxito si es Admin/Bibliotecario")
     public void testBloquearSalaSuccess() throws Exception {
-        BloqueoSala bloqueo = new BloqueoSala();
-        bloqueo.setMotivo("Obras");
-
         when(authService.getEmpleadoByToken("token-admin")).thenReturn(admin);
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
 
         mockMvc.perform(post("/api/salas/10/bloquear")
                 .header("Authorization", "token-admin")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(bloqueo)))
+                .content(jsonBloqueo))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Sala bloqueada correctamente por motivo: Obras"));
     }
@@ -182,33 +177,27 @@ public class AulaControllerTest {
     @Test
     @DisplayName("POST /bloquear - Falla si no es Admin/Bibliotecario")
     public void testBloquearSalaForbbiden() throws Exception {
-        BloqueoSala bloqueo = new BloqueoSala();
-        
         // Estudiante intentando bloquear
         when(authService.getEmpleadoByToken("token-estudiante")).thenReturn(estudiante); 
 
         mockMvc.perform(post("/api/salas/10/bloquear")
                 .header("Authorization", "token-estudiante")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(bloqueo)))
+                .content(jsonBloqueo))
                 .andExpect(status().isForbidden());
     }
 
-    // --- TESTS FALTANTES (CUBRIR HUECOS EN ROJO) ---
-
+    // --- TESTS listarReservasUsuario y consultarReservasAula ---
     @Test
     @DisplayName("GET /usuario/{usuarioId} - Retorna las reservas filtradas por ID de usuario")
     public void testListarReservasUsuario() throws Exception {
-        // Creamos una segunda reserva de otro usuario para comprobar que el filter funciona
         Reserva reservaOtro = new Reserva();
         User otroUser = new User();
-        otroUser.setId(99L); // ID distinto al de "estudiante" (que es 1L)
+        otroUser.setId(99L);
         reservaOtro.setUsuario(otroUser);
 
-        // Simulamos que la base de datos devuelve ambas reservas
         when(reservaRepository.findAll()).thenReturn(Arrays.asList(reservaMock, reservaOtro));
 
-        // Pedimos las reservas del usuario 1 (estudiante)
         mockMvc.perform(get("/api/salas/usuario/1"))
                 .andExpect(status().isOk());
     }
@@ -216,10 +205,8 @@ public class AulaControllerTest {
     @Test
     @DisplayName("GET /{id}/reservas - Retorna las reservas de un aula concreta")
     public void testConsultarReservasAula() throws Exception {
-        // Simulamos que al buscar por el aula 10, devuelve nuestra reserva
         when(reservaRepository.findByAulaId(10L)).thenReturn(Arrays.asList(reservaMock));
 
-        // Hacemos la petición al endpoint
         mockMvc.perform(get("/api/salas/10/reservas"))
                 .andExpect(status().isOk());
     }
