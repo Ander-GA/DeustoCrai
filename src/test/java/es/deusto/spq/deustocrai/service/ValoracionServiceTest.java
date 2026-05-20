@@ -58,7 +58,6 @@ public class ValoracionServiceTest {
     @DisplayName("Dejar reseña - Éxito")
     void testDejarResenaExito() {
         when(recursoRepository.findById(100L)).thenReturn(Optional.of(recurso));
-        // Simulamos que el usuario SÍ ha devuelto el libro
         when(prestamoRepository.findByUsuarioIdAndEstado(1L, Prestamo.EstadoPrestamo.DEVUELTO))
                 .thenReturn(Arrays.asList(prestamo));
         when(valoracionRepository.existsByUsuarioIdAndRecursoId(1L, 100L)).thenReturn(false);
@@ -81,10 +80,19 @@ public class ValoracionServiceTest {
     }
 
     @Test
+    @DisplayName("Dejar reseña - Excepción si el recurso no existe")
+    void testDejarResenaRecursoNoEncontrado() {
+        when(recursoRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            valoracionService.dejarResena(usuario, 999L, 5, "Genial");
+        });
+    }
+
+    @Test
     @DisplayName("Dejar reseña - Excepción si no se ha alquilado/devuelto")
     void testDejarResenaSinDevolver() {
         when(recursoRepository.findById(100L)).thenReturn(Optional.of(recurso));
-        // El usuario NO tiene préstamos devueltos de este recurso
         when(prestamoRepository.findByUsuarioIdAndEstado(1L, Prestamo.EstadoPrestamo.DEVUELTO))
                 .thenReturn(Collections.emptyList());
 
@@ -99,7 +107,6 @@ public class ValoracionServiceTest {
         when(recursoRepository.findById(100L)).thenReturn(Optional.of(recurso));
         when(prestamoRepository.findByUsuarioIdAndEstado(1L, Prestamo.EstadoPrestamo.DEVUELTO))
                 .thenReturn(Arrays.asList(prestamo));
-        // Simulamos que ya existe una valoración en BBDD
         when(valoracionRepository.existsByUsuarioIdAndRecursoId(1L, 100L)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> {
