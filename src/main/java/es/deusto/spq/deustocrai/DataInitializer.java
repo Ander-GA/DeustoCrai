@@ -11,7 +11,8 @@ import org.springframework.context.annotation.Configuration;
 
 import es.deusto.spq.deustocrai.dao.AulaRepository;
 import es.deusto.spq.deustocrai.dao.MaterialRepository;
-import es.deusto.spq.deustocrai.dao.UserRepository; 
+import es.deusto.spq.deustocrai.dao.UserRepository;
+import es.deusto.spq.deustocrai.dao.ValoracionRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Material;
 import es.deusto.spq.deustocrai.entity.User; 
@@ -43,15 +44,17 @@ public class DataInitializer {
             InstalacionRepository instalacionRepository,
             ReservaInstalacionRepository reservaInstalacionRepository,
             AvisoRepository avisoRepository,
-            ColaEsperaRepository colaEsperaRepository) { // <-- LO INYECTAMOS AQUÍ
+            ColaEsperaRepository colaEsperaRepository,
+            ValoracionRepository valoracionRepository) { 
 
         return args -> {
             // 1. Limpiar datos previos en el orden correcto (primero los hijos, luego los padres)
-            reservaInstalacionRepository.deleteAll(); // <-- BORRAMOS LAS RESERVAS DE PISTAS PRIMERO
+            reservaInstalacionRepository.deleteAll(); 
             prestamoRepository.deleteAll();
             reservaRepository.deleteAll();
             colaEsperaRepository.deleteAll();
             avisoRepository.deleteAll();
+            valoracionRepository.deleteAll();
             userRepository.deleteAll();
             libroRepository.deleteAll();
             aulaRepository.deleteAll();
