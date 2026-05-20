@@ -2,205 +2,346 @@ package es.deusto.spq.deustocrai.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
-import es.deusto.spq.deustocrai.dao.BloqueoSalaRepository;
-import es.deusto.spq.deustocrai.dao.UserRepository;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import es.deusto.spq.deustocrai.entity.User;
-import org.junit.jupiter.api.Tag;
 
-@Tag("Unitario")
+/**
+ * Tests unitarios para ReservaService.
+ * Cubre getReservasPorAula, realizarReserva y obtenerReservasActivas.
+ */
 @ExtendWith(MockitoExtension.class)
-@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
-public class ReservaServiceTest {
+class ReservaServiceTest {
 
     @Mock
     private ReservaRepository reservaRepository;
 
-    // --- NUEVAS DEPENDENCIAS AÑADIDAS POR TU COMPAÑERO ---
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private BloqueoSalaRepository bloqueoSalaRepository;
-    // ----------------------------------------------------
-
     @InjectMocks
     private ReservaService reservaService;
 
-    private Aula aula;
+    // ─── Fixtures ────────────────────────────────────────────────────────────────
+
     private User usuario;
-    private LocalDateTime inicio;
-    private LocalDateTime fin;
+    private Aula aula;
+
+    // Base temporal: mañana a las 10:00
+    private LocalDateTime base;
 
     @BeforeEach
     void setUp() {
-        aula = mock(Aula.class);
-        when(aula.getId()).thenReturn(1L);
+        usuario = new User("Ana", "García", "pass", "ana@deusto.es", User.Role.ESTUDIANTE);
+        aula = new Aula("Sala Juntas", 10, true);
 
-        usuario = mock(User.class);
-
-        inicio = LocalDateTime.of(2025, 6, 1, 10, 0);
-        fin    = LocalDateTime.of(2025, 6, 1, 12, 0);
-
-        // Simulamos que el aula no está bloqueada para que los tests pasen
-        when(bloqueoSalaRepository.findByAulaId(anyLong())).thenReturn(Collections.emptyList());
+        base = LocalDateTime.now()
+                .plusDays(1)
+                .withHour(10).withMinute(0).withSecond(0).withNano(0);
     }
 
-    @Test
-    @DisplayName("realizarReserva: guarda la reserva si el aula esta libre")
-    void testRealizarReservaSinConflicto() {
-        Reserva nueva = new Reserva(usuario, aula, inicio, fin);
-        when(reservaRepository.findByAulaId(1L)).thenReturn(Collections.emptyList());
-        when(reservaRepository.save(nueva)).thenReturn(nueva);
+    // ─── getReservasPorAula ────────────────────────────────────────────────────────
 
-        Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+    @Nested
+    @DisplayName("getReservasPorAula")
+    class GetReservasPorAulaTests {
 
-        assertTrue(resultado.isPresent());
-        verify(reservaRepository, times(1)).save(nueva);
+        @Test
+        @DisplayName("Devuelve la lista de reservas del repositorio para ese aula")
+        void testDevuelveLista() {
+            Reserva r = new Reserva(usuario, aula, base, base.plusHours(2));
+            when(reservaRepository.findByAulaId(1L)).thenReturn(List.of(r));
+
+            List<Reserva> resultado = reservaService.getReservasPorAula(1L);
+
+            assertEquals(1, resultado.size());
+        }
+
+        @Test
+        @DisplayName("Devuelve lista vacía cuando no hay reservas para ese aula")
+        void testDevuelveVaciaSinReservas() {
+            when(reservaRepository.findByAulaId(1L)).thenReturn(Collections.emptyList());
+
+            List<Reserva> resultado = reservaService.getReservasPorAula(1L);
+
+            assertTrue(resultado.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Llama a findByAulaId con el ID correcto")
+        void testLlamaRepositorioConIdCorrecto() {
+            when(reservaRepository.findByAulaId(42L)).thenReturn(Collections.emptyList());
+
+            reservaService.getReservasPorAula(42L);
+
+            verify(reservaRepository).findByAulaId(42L);
+        }
+
+        @Test
+        @DisplayName("Llama a findByAulaId exactamente una vez")
+        void testLlamaRepositorioUnaVez() {
+            when(reservaRepository.findByAulaId(1L)).thenReturn(Collections.emptyList());
+
+            reservaService.getReservasPorAula(1L);
+
+            verify(reservaRepository, times(1)).findByAulaId(1L);
+        }
+
+        @Test
+        @DisplayName("Devuelve múltiples reservas correctamente")
+        void testDevuelveMultiplesReservas() {
+            Reserva r1 = new Reserva(usuario, aula, base, base.plusHours(1));
+            Reserva r2 = new Reserva(usuario, aula, base.plusHours(2), base.plusHours(3));
+            when(reservaRepository.findByAulaId(1L)).thenReturn(Arrays.asList(r1, r2));
+
+            List<Reserva> resultado = reservaService.getReservasPorAula(1L);
+
+            assertEquals(2, resultado.size());
+        }
     }
 
-    @Test
-    @DisplayName("realizarReserva: la reserva guardada tiene los datos correctos")
-    void testRealizarReservaDatosCorrectos() {
-        Reserva nueva = new Reserva(usuario, aula, inicio, fin);
-        when(reservaRepository.findByAulaId(1L)).thenReturn(Collections.emptyList());
-        when(reservaRepository.save(nueva)).thenReturn(nueva);
+    // ─── realizarReserva ──────────────────────────────────────────────────────────
 
-        Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+    @Nested
+    @DisplayName("realizarReserva")
+    class RealizarReservaTests {
 
-        assertEquals(inicio, resultado.get().getFechaHoraInicio());
-        assertEquals(fin, resultado.get().getFechaHoraFin());
+        @Test
+        @DisplayName("Sin reservas existentes: crea la reserva y la devuelve")
+        void testReservaExitosaSinConflictos() {
+            Reserva nueva = new Reserva(usuario, aula, base, base.plusHours(2));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(Collections.emptyList());
+            when(reservaRepository.save(nueva)).thenReturn(nueva);
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertTrue(resultado.isPresent());
+            assertSame(nueva, resultado.get());
+        }
+
+        @Test
+        @DisplayName("Sin conflictos: llama a save exactamente una vez")
+        void testReservaExitosaLlamaSave() {
+            Reserva nueva = new Reserva(usuario, aula, base, base.plusHours(2));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(Collections.emptyList());
+            when(reservaRepository.save(nueva)).thenReturn(nueva);
+
+            reservaService.realizarReserva(nueva);
+
+            verify(reservaRepository, times(1)).save(nueva);
+        }
+
+        @Test
+        @DisplayName("Solapamiento total: devuelve Optional vacío")
+        void testReservaConflictoSolapamientoTotal() {
+            Reserva existente = new Reserva(usuario, aula, base, base.plusHours(4));
+            Reserva nueva     = new Reserva(usuario, aula, base.plusHours(1), base.plusHours(3));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertFalse(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Solapamiento al inicio (nueva empieza antes): devuelve Optional vacío")
+        void testReservaConflictoSolapamientoAlInicio() {
+            // existente: 12:00-14:00  nueva: 11:00-13:00 → solapa
+            LocalDateTime ini = base.withHour(12);
+            Reserva existente = new Reserva(usuario, aula, ini, ini.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, ini.minusHours(1), ini.plusHours(1));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertFalse(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Solapamiento al final (nueva termina después): devuelve Optional vacío")
+        void testReservaConflictoSolapamientoAlFinal() {
+            // existente: 10:00-12:00  nueva: 11:00-13:00 → solapa
+            LocalDateTime ini = base.withHour(10);
+            Reserva existente = new Reserva(usuario, aula, ini, ini.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, ini.plusHours(1), ini.plusHours(3));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertFalse(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Reserva exactamente contigua (nueva empieza cuando termina la existente): sin conflicto")
+        void testReservaSinSolapamientoContigua() {
+            // existente: 10:00-12:00  nueva: 12:00-14:00 → sin solapamiento
+            LocalDateTime ini = base.withHour(10);
+            Reserva existente = new Reserva(usuario, aula, ini, ini.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, ini.plusHours(2), ini.plusHours(4));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+            when(reservaRepository.save(nueva)).thenReturn(nueva);
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertTrue(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Reserva antes de la existente (sin solapamiento): se crea correctamente")
+        void testReservaSinSolapamientoAntes() {
+            // existente: 14:00-16:00  nueva: 10:00-12:00 → sin solapamiento
+            LocalDateTime ini = base.withHour(14);
+            Reserva existente = new Reserva(usuario, aula, ini, ini.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, ini.minusHours(4), ini.minusHours(2));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+            when(reservaRepository.save(nueva)).thenReturn(nueva);
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertTrue(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Conflicto: no llama a save")
+        void testReservaConflictoNoLlamaSave() {
+            Reserva existente = new Reserva(usuario, aula, base, base.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, base.plusHours(1), base.plusHours(3));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+
+            reservaService.realizarReserva(nueva);
+
+            verify(reservaRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Múltiples reservas existentes, sólo una solapa: devuelve Optional vacío")
+        void testReservaConflictoConVariasExistentes() {
+            Reserva e1 = new Reserva(usuario, aula, base.withHour(8),  base.withHour(9));
+            Reserva e2 = new Reserva(usuario, aula, base.withHour(10), base.withHour(12)); // este solapa
+            Reserva nueva = new Reserva(usuario, aula, base.withHour(11), base.withHour(13));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(Arrays.asList(e1, e2));
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertFalse(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Nueva reserva cubre exactamente el mismo bloque que una existente: devuelve Optional vacío")
+        void testReservaIdenticoBloque() {
+            Reserva existente = new Reserva(usuario, aula, base, base.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, base, base.plusHours(2));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertFalse(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("Nueva reserva engloba por completo una existente: devuelve Optional vacío")
+        void testReservaNuevaEnglobaExistente() {
+            // existente: 11:00-12:00  nueva: 10:00-13:00 → solapa
+            Reserva existente = new Reserva(usuario, aula, base.plusHours(1), base.plusHours(2));
+            Reserva nueva     = new Reserva(usuario, aula, base, base.plusHours(3));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(List.of(existente));
+
+            Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+
+            assertFalse(resultado.isPresent());
+        }
+
+        @Test
+        @DisplayName("El objeto guardado tiene los datos de la reserva nueva (captura con ArgumentCaptor)")
+        void testReservaDatosGuardadosCorrectos() {
+            Reserva nueva = new Reserva(usuario, aula, base, base.plusHours(2));
+            when(reservaRepository.findByAulaId(aula.getId())).thenReturn(Collections.emptyList());
+            ArgumentCaptor<Reserva> captor = ArgumentCaptor.forClass(Reserva.class);
+            when(reservaRepository.save(captor.capture())).thenReturn(nueva);
+
+            reservaService.realizarReserva(nueva);
+
+            Reserva captured = captor.getValue();
+            assertEquals(base, captured.getFechaHoraInicio());
+            assertEquals(base.plusHours(2), captured.getFechaHoraFin());
+        }
     }
 
-    @Test
-    @DisplayName("realizarReserva: devuelve Optional vacio si hay solapamiento exacto")
-    void testRealizarReservaConSolapamientoExacto() {
-        Reserva existente = new Reserva(usuario, aula, inicio, fin);
-        Reserva nueva     = new Reserva(usuario, aula, inicio, fin);
+    // ─── obtenerReservasActivas ───────────────────────────────────────────────────
 
-        when(reservaRepository.findByAulaId(1L)).thenReturn(List.of(existente));
+    @Nested
+    @DisplayName("obtenerReservasActivas")
+    class ObtenerReservasActivasTests {
 
-        Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+        @Test
+        @DisplayName("Devuelve la lista del repositorio sin modificar")
+        void testDevuelveLista() {
+            Reserva r = new Reserva(usuario, aula, base, base.plusHours(1));
+            when(reservaRepository.findReservasActivas()).thenReturn(List.of(r));
 
-        assertTrue(resultado.isEmpty());
-        verify(reservaRepository, never()).save(any());
-    }
+            List<Reserva> resultado = reservaService.obtenerReservasActivas();
 
-    @Test
-    @DisplayName("realizarReserva: devuelve Optional vacio si la nueva empieza dentro de una existente")
-    void testRealizarReservaEmpiezaDentroDeExistente() {
-        Reserva existente = new Reserva(usuario, aula,
-            LocalDateTime.of(2025, 6, 1, 9, 0),
-            LocalDateTime.of(2025, 6, 1, 11, 0));
+            assertEquals(1, resultado.size());
+        }
 
-        Reserva nueva = new Reserva(usuario, aula,
-            LocalDateTime.of(2025, 6, 1, 10, 30),
-            LocalDateTime.of(2025, 6, 1, 12, 0));
+        @Test
+        @DisplayName("Devuelve lista vacía cuando no hay reservas activas")
+        void testDevuelveVaciaSinActivas() {
+            when(reservaRepository.findReservasActivas()).thenReturn(Collections.emptyList());
 
-        when(reservaRepository.findByAulaId(1L)).thenReturn(List.of(existente));
+            List<Reserva> resultado = reservaService.obtenerReservasActivas();
 
-        Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+            assertTrue(resultado.isEmpty());
+        }
 
-        assertTrue(resultado.isEmpty());
-    }
+        @Test
+        @DisplayName("Llama a findReservasActivas exactamente una vez")
+        void testLlamaRepositorioUnaVez() {
+            when(reservaRepository.findReservasActivas()).thenReturn(Collections.emptyList());
 
-    @Test
-    @DisplayName("realizarReserva: devuelve Optional vacio si la nueva engloba una existente")
-    void testRealizarReservaEnglobaExistente() {
-        Reserva existente = new Reserva(usuario, aula,
-            LocalDateTime.of(2025, 6, 1, 10, 30),
-            LocalDateTime.of(2025, 6, 1, 11, 30));
+            reservaService.obtenerReservasActivas();
 
-        Reserva nueva = new Reserva(usuario, aula,
-            LocalDateTime.of(2025, 6, 1, 10, 0),
-            LocalDateTime.of(2025, 6, 1, 12, 0));
+            verify(reservaRepository, times(1)).findReservasActivas();
+        }
 
-        when(reservaRepository.findByAulaId(1L)).thenReturn(List.of(existente));
+        @Test
+        @DisplayName("Devuelve múltiples reservas activas correctamente")
+        void testDevuelveMultiplesActivas() {
+            Reserva r1 = new Reserva(usuario, aula, base, base.plusHours(1));
+            Reserva r2 = new Reserva(usuario, aula, base.plusHours(2), base.plusHours(3));
+            Reserva r3 = new Reserva(usuario, aula, base.plusHours(4), base.plusHours(5));
+            when(reservaRepository.findReservasActivas()).thenReturn(Arrays.asList(r1, r2, r3));
 
-        Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
+            List<Reserva> resultado = reservaService.obtenerReservasActivas();
 
-        assertTrue(resultado.isEmpty());
-    }
+            assertEquals(3, resultado.size());
+        }
 
-    @Test
-    @DisplayName("realizarReserva: permite reserva que empieza justo cuando termina la existente")
-    void testRealizarReservaAdyacenteNoConflicto() {
-        Reserva existente = new Reserva(usuario, aula,
-            LocalDateTime.of(2025, 6, 1, 8, 0),
-            LocalDateTime.of(2025, 6, 1, 10, 0));
+        @Test
+        @DisplayName("No llama a findByAulaId sino a findReservasActivas")
+        void testLlamaMetodoCorrecto() {
+            when(reservaRepository.findReservasActivas()).thenReturn(Collections.emptyList());
 
-        Reserva nueva = new Reserva(usuario, aula,
-            LocalDateTime.of(2025, 6, 1, 10, 0),
-            LocalDateTime.of(2025, 6, 1, 12, 0));
+            reservaService.obtenerReservasActivas();
 
-        when(reservaRepository.findByAulaId(1L)).thenReturn(List.of(existente));
-        when(reservaRepository.save(nueva)).thenReturn(nueva);
-
-        Optional<Reserva> resultado = reservaService.realizarReserva(nueva);
-
-        assertTrue(resultado.isPresent());
-    }
-
-    @Test
-    @DisplayName("getReservasPorAula: devuelve las reservas del aula indicada")
-    void testGetReservasPorAula() {
-        Reserva r = new Reserva(usuario, aula, inicio, fin);
-        when(reservaRepository.findByAulaId(1L)).thenReturn(List.of(r));
-
-        List<Reserva> resultado = reservaService.getReservasPorAula(1L);
-
-        assertEquals(1, resultado.size());
-        verify(reservaRepository, times(1)).findByAulaId(1L);
-    }
-
-    @Test
-    @DisplayName("getReservasPorAula: devuelve lista vacia si el aula no tiene reservas")
-    void testGetReservasPorAulaSinReservas() {
-        when(reservaRepository.findByAulaId(2L)).thenReturn(Collections.emptyList());
-
-        List<Reserva> resultado = reservaService.getReservasPorAula(2L);
-
-        assertTrue(resultado.isEmpty());
-    }
-
-    @Test
-    @DisplayName("obtenerReservasActivas: devuelve reservas futuras")
-    void testObtenerReservasActivas() {
-        Reserva activa = new Reserva(usuario, aula,
-            LocalDateTime.now().plusHours(1),
-            LocalDateTime.now().plusHours(3));
-
-        when(reservaRepository.findReservasActivas()).thenReturn(List.of(activa));
-
-        List<Reserva> resultado = reservaService.obtenerReservasActivas();
-
-        assertEquals(1, resultado.size());
-        verify(reservaRepository, times(1)).findReservasActivas();
-    }
-
-    @Test
-    @DisplayName("obtenerReservasActivas: devuelve lista vacia si no hay reservas activas")
-    void testObtenerReservasActivasVacia() {
-        when(reservaRepository.findReservasActivas()).thenReturn(Collections.emptyList());
-
-        List<Reserva> resultado = reservaService.obtenerReservasActivas();
-
-        assertTrue(resultado.isEmpty());
+            verify(reservaRepository, never()).findByAulaId(anyLong());
+            verify(reservaRepository).findReservasActivas();
+        }
     }
 }
