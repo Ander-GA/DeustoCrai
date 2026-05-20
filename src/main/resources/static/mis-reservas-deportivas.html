@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>DeustoCrai - Mis Reservas Deportivas</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <main class="container" style="padding: 40px; max-width: 800px; margin: auto;">
+        <h2 style="color: #003366;">Mis Reservas de Instalaciones Deportivas</h2>
+        <hr>
+        <div id="lista-reservas-deportivas" style="margin-top: 20px;">
+            <p>Cargando tus reservas deportivas...</p>
+        </div>
+        <br>
+        <a href="index.html" class="btn-primary" style="text-decoration:none; display:inline-block; text-align:center;">Volver al Inicio</a>
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Formatea la fecha para poder meterla en el input "datetime-local" por defecto
+        function formatToLocalInput(dateObj) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        async function cargarReservasDeportivas() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/deportes/mis-reservas', {
+                    headers: { 'Authorization': token }
+                });
+                                
+                if (!response.ok) throw new Error("Error del servidor");
+
+                const reservas = await response.json();
+                const container = document.getElementById('lista-reservas-deportivas');
+                
+                if (reservas.length === 0) {
+                    container.innerHTML = "<p>No tienes reservas de instalaciones deportivas.</p>";
+                    return;
+                }
+
+                container.innerHTML = ''; 
+
+                reservas.forEach(r => {
+                    const fInicio = r.fechaHoraInicio;
+                    const fFin = r.fechaHoraFin;
+                    
+                    const start = Array.isArray(fInicio) 
+                        ? new Date(fInicio[0], fInicio[1]-1, fInicio[2], fInicio[3], fInicio[4]||0) 
+                        : new Date(fInicio);
+                    
+                    const end = Array.isArray(fFin) 
+                        ? new Date(fFin[0], fFin[1]-1, fFin[2], fFin[3], fFin[4]||0) 
+                        : new Date(fFin);
+
+                    const nombreInstalacion = r.instalacionDeportiva ? r.instalacionDeportiva.nombre : (r.instalacion ? r.instalacion.nombre : "Instalación desconocida");
+                    const estado = r.estado ? r.estado : "DESCONOCIDO";
+
+                    let colorEstado = "black";
+                    if (estado === "PENDIENTE") colorEstado = "#f0ad4e"; 
+                    else if (estado === "APROBADA" || estado === "ACEPTADA") colorEstado = "#5cb85c"; 
+                    else if (estado === "RECHAZADA") colorEstado = "#d9534f"; 
+
+                    const estaAprobada = estado === "APROBADA" || estado === "ACEPTADA";
+
+                    container.innerHTML += `
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #003366; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <strong style="font-size: 1.1em; color: #003366;">${nombreInstalacion}</strong><br>
+                            <strong>Fecha:</strong> ${start.toLocaleDateString()} <br>
+                            <strong>Horario:</strong> ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} <br>
+                            <strong>Estado de la solicitud:</strong> <span style="color: ${colorEstado}; font-weight: bold;">${estado}</span>
+                            
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button onclick="cancelarReserva(${r.id})" style="background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">Cancelar Reserva</button>
+                                ${!estaAprobada ? `<button onclick="mostrarFormularioModificar(${r.id})" style="background: #f0ad4e; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">Modificar Horario</button>` : ''}
+                            </div>
+
+                            <div id="form-modificar-${r.id}" style="display: none; margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #ddd;">
+                                <label style="display:block; margin-bottom: 8px;">Nueva Inicio: <input type="datetime-local" id="inicio-${r.id}" value="${formatToLocalInput(start)}"></label>
+                                <label style="display:block; margin-bottom: 12px;">Nueva Fin: <input type="datetime-local" id="fin-${r.id}" value="${formatToLocalInput(end)}"></label>
+                                <button onclick="guardarModificacion(${r.id})" style="background: #5cb85c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Guardar</button>
+                                <button onclick="ocultarFormularioModificar(${r.id})" style="background: #ccc; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px;">Cerrar</button>
+                            </div>
+                        </div>`;
+                });
+            } catch (error) {
+                document.getElementById('lista-reservas-deportivas').innerHTML = "<p>Error al cargar las reservas deportivas.</p>";
+            }
+        }
+
+        async function cancelarReserva(id) {
+            if (!confirm("¿Seguro que deseas cancelar esta reserva?")) return;
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/deportes/mis-reservas/' + id, {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+            });
+            if (response.ok) {
+                alert("Reserva cancelada.");
+                cargarReservasDeportivas();
+            } else {
+                alert("Hubo un error al cancelar la reserva.");
+            }
+        }
+
+        function mostrarFormularioModificar(id) {
+            document.getElementById('form-modificar-' + id).style.display = 'block';
+        }
+
+        function ocultarFormularioModificar(id) {
+            document.getElementById('form-modificar-' + id).style.display = 'none';
+        }
+
+        async function guardarModificacion(id) {
+            const token = localStorage.getItem('token');
+            const inicio = document.getElementById('inicio-' + id).value;
+            const fin = document.getElementById('fin-' + id).value;
+
+            if (!inicio || !fin) {
+                alert("Por favor, rellena ambas fechas.");
+                return;
+            }
+
+            const payload = {
+                fechaHoraInicio: inicio,
+                fechaHoraFin: fin
+            };
+
+            const response = await fetch('/api/deportes/mis-reservas/' + id, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("Reserva modificada correctamente. Su estado ha vuelto a PENDIENTE.");
+                cargarReservasDeportivas();
+            } else {
+                const mensajeError = await response.text();
+                alert("Error al modificar: " + mensajeError);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => setTimeout(cargarReservasDeportivas, 400));
+    </script>
+</body>
+</html>

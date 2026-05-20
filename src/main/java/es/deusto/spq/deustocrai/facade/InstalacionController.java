@@ -29,13 +29,11 @@ public class InstalacionController {
         this.authService = authService;
     }
 
-    // Listar las pistas disponibles para el frontend
     @GetMapping("/instalaciones")
     public ResponseEntity<?> getInstalaciones() {
         return ResponseEntity.ok(instalacionRepo.findAll());
     }
 
-    // Un estudiante solicita la pista
     @PostMapping("/solicitar")
     public ResponseEntity<?> solicitarReserva(@RequestHeader("Authorization") String token, @RequestBody ReservaInstalacion reserva) {
         User user = authService.getEmpleadoByToken(token);
@@ -51,7 +49,6 @@ public class InstalacionController {
         }
     }
 
-    // El bibliotecario ve las que están "PENDIENTES"
     @GetMapping("/pendientes")
     public ResponseEntity<?> getPendientes(@RequestHeader("Authorization") String token) {
         User user = authService.getEmpleadoByToken(token);
@@ -61,7 +58,6 @@ public class InstalacionController {
         return ResponseEntity.ok(reservaRepo.findByEstado(ReservaInstalacion.EstadoReserva.PENDIENTE));
     }
 
-    // El bibliotecario acepta o rechaza
     @PutMapping("/procesar/{id}")
     public ResponseEntity<?> procesar(@RequestHeader("Authorization") String token, @PathVariable("id") Long id, @RequestParam("estado") ReservaInstalacion.EstadoReserva estado) {
         User user = authService.getEmpleadoByToken(token);
@@ -75,9 +71,50 @@ public class InstalacionController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    // Obtener los eventos para el calendario
     @GetMapping("/eventos")
     public ResponseEntity<List<Map<String, Object>>> obtenerEventosCalendario() {
         return ResponseEntity.ok(instalacionService.obtenerEventosCalendario());
+    }
+
+    @GetMapping("/mis-reservas")
+    public ResponseEntity<?> getMisReservas(@RequestHeader("Authorization") String token) {
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
+        List<ReservaInstalacion> misReservas = reservaRepo.findByUsuario(user);
+        return ResponseEntity.ok(misReservas);
+    }
+
+    // --- NUEVO: Endpoint para Cancelar ---
+    @DeleteMapping("/mis-reservas/{id}")
+    public ResponseEntity<?> cancelarMiReserva(@PathVariable("id") Long id, @RequestHeader("Authorization") String token) {
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        if (instalacionService.cancelarReservaUsuario(id, user.getId())) {
+            return ResponseEntity.ok("Reserva cancelada correctamente.");
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No se pudo cancelar la reserva.");
+    }
+
+    // --- NUEVO: Endpoint para Modificar ---
+    @PutMapping("/mis-reservas/{id}")
+    public ResponseEntity<?> modificarMiReserva(
+            @PathVariable("id") Long id, 
+            @RequestHeader("Authorization") String token,
+            @RequestBody ReservaInstalacion nuevosDatos) {
+        
+        User user = authService.getEmpleadoByToken(token);
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        String resultado = instalacionService.modificarReservaUsuario(id, user.getId(), nuevosDatos.getFechaHoraInicio(), nuevosDatos.getFechaHoraFin());
+        
+        if ("OK".equals(resultado)) {
+            return ResponseEntity.ok("Reserva modificada correctamente.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resultado);
+        }
     }
 }

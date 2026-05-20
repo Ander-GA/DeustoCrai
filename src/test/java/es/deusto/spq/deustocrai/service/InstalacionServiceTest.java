@@ -50,7 +50,9 @@ public class InstalacionServiceTest {
     @DisplayName("solicitarReserva: Falla si la fecha es en el pasado")
     void testSolicitarReservaPasado() {
         // Simulamos una reserva de ayer
-        reservaNueva.setFechaHoraInicio(LocalDateTime.now().minusDays(1));
+        LocalDateTime ayer = LocalDateTime.now().minusDays(1);
+        reservaNueva.setFechaHoraInicio(ayer);
+        reservaNueva.setFechaHoraFin(ayer.plusHours(1)); // Añadido para pasar la nueva validación de nulos
         
         String resultado = instalacionService.solicitarReserva(reservaNueva);
         
@@ -62,7 +64,9 @@ public class InstalacionServiceTest {
     @DisplayName("solicitarReserva: Falla si se reserva con más de 6 días de antelación")
     void testSolicitarReservaMasDe6Dias() {
         // Simulamos una reserva para dentro de 10 días
-        reservaNueva.setFechaHoraInicio(LocalDateTime.now().plusDays(10));
+        LocalDateTime futuro = LocalDateTime.now().plusDays(10);
+        reservaNueva.setFechaHoraInicio(futuro);
+        reservaNueva.setFechaHoraFin(futuro.plusHours(1)); // Añadido para pasar la nueva validación de nulos
         
         String resultado = instalacionService.solicitarReserva(reservaNueva);
         
@@ -83,7 +87,8 @@ public class InstalacionServiceTest {
         existente.setFechaHoraInicio(inicio.plusHours(1));
         existente.setFechaHoraFin(inicio.plusHours(3));
 
-        when(reservaRepo.findByInstalacionIdAndEstado(1L, ReservaInstalacion.EstadoReserva.APROBADA))
+        // CORRECCIÓN: Usamos el método con el guion bajo (_) que actualizamos en el repositorio
+        when(reservaRepo.findByInstalacion_IdAndEstado(1L, ReservaInstalacion.EstadoReserva.APROBADA))
             .thenReturn(Arrays.asList(existente));
 
         String resultado = instalacionService.solicitarReserva(reservaNueva);
@@ -100,8 +105,8 @@ public class InstalacionServiceTest {
         reservaNueva.setFechaHoraInicio(inicio);
         reservaNueva.setFechaHoraFin(inicio.plusHours(1));
 
-        // Simulamos que la pista está libre
-        when(reservaRepo.findByInstalacionIdAndEstado(1L, ReservaInstalacion.EstadoReserva.APROBADA))
+        // CORRECCIÓN: Usamos el método con el guion bajo (_)
+        when(reservaRepo.findByInstalacion_IdAndEstado(1L, ReservaInstalacion.EstadoReserva.APROBADA))
             .thenReturn(Collections.emptyList());
 
         String resultado = instalacionService.solicitarReserva(reservaNueva);
