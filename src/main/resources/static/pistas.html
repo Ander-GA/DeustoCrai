@@ -9,11 +9,30 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <style>
         .form-reserva { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .form-reserva label { font-weight: bold; margin-top: 15px; display: block; color: var(--azul-deusto); }
-        .form-reserva select, .form-reserva input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .form-reserva select, .form-reserva input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         
+        /* Ajustes corregidos para que Select2 se vea igual de alto que tus otros inputs sin deformarse */
+        .select2-container .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 4px !important;
+            margin-top: 5px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 40px !important; /* Centra el contenido verticalmente */
+            padding-left: 10px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 42px !important; /* Ajusta la altura de la flecha */
+        }
+
         /* Estilos para el contenedor del calendario */
         #calendar-container {
             max-width: 900px;
@@ -74,7 +93,6 @@
 
     <script src="js/auth.js"></script>
     <script>
-        // Inicializar FullCalendar y cargar instalaciones al entrar
         document.addEventListener('DOMContentLoaded', async function() {
             // 1. Renderizar el calendario
             var calendarEl = document.getElementById('calendar');
@@ -94,15 +112,43 @@
             });
             calendar.render();
 
-            // 2. Cargar el select del formulario
+            // 2. Cargar el select del formulario dinámicamente con las imágenes
             try {
                 const response = await fetch('/api/deportes/instalaciones');
                 const instalaciones = await response.json();
                 const select = document.getElementById('instalacion');
+                
                 select.innerHTML = '<option value="">-- Elige una pista --</option>';
+                
                 instalaciones.forEach(inst => {
-                    select.innerHTML += `<option value="${inst.id}">${inst.nombre} (${inst.tipo})</option>`;
+                    let iconPath = '';
+                    if (inst.tipo === 'PADEL') iconPath = '/images/icono-padel.png';
+                    if (inst.tipo === 'FUTBOL') iconPath = '/images/icono-futbol.png';
+
+                    select.innerHTML += `<option value="${inst.id}" data-icon="${iconPath}">${inst.nombre}</option>`;
                 });
+
+                // Función de Select2 para maquetar la opción con el icono
+                function formatoOpcion(opcion) {
+                    if (!opcion.id) { return opcion.text; }
+                    var icono = $(opcion.element).data('icon');
+                    
+                    if (!icono) { return $('<span>' + opcion.text + '</span>'); }
+                    
+                    var $opcionConIcono = $(
+                        '<span><img src="' + icono + '" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;" /> ' + opcion.text + '</span>'
+                    );
+                    return $opcionConIcono;
+                }
+
+                // Inicializar la librería Select2 en nuestro desplegable
+                $('#instalacion').select2({
+                    templateResult: formatoOpcion,
+                    templateSelection: formatoOpcion,
+                    minimumResultsForSearch: Infinity,
+                    width: '100%'
+                });
+
             } catch (e) {
                 console.error("Error cargando instalaciones", e);
             }
@@ -114,7 +160,13 @@
             const token = localStorage.getItem('token');
             if (!token) { alert("Debes iniciar sesión"); return; }
 
-            const instalacionId = document.getElementById('instalacion').value;
+            const instalacionId = $('#instalacion').val();
+            
+            if (!instalacionId) {
+                alert("Por favor, selecciona una instalación.");
+                return;
+            }
+
             const fecha = document.getElementById('fecha').value;
             const hora = document.getElementById('hora').value;
 
