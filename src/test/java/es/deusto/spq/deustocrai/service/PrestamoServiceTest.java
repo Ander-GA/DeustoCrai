@@ -43,6 +43,12 @@ class PrestamoServiceTest {
 
     @Mock
     private MaterialRepository materialRepository;
+    
+    @Mock
+    private es.deusto.spq.deustocrai.service.ColaEsperaService colaEsperaService;
+
+    @Mock
+    private es.deusto.spq.deustocrai.dao.ColaEsperaRepository colaEsperaRepository;
 
     @InjectMocks
     private PrestamoService prestamoService;
@@ -407,15 +413,14 @@ class PrestamoServiceTest {
     @DisplayName("devolverPrestamo")
     class DevolverPrestamoTests {
 
-        @Test
+    	@Test
         @DisplayName("Devolución exitosa de libro: devuelve true")
         void testDevolverLibroExitoso() {
             estudiante.setId(1L);
             Prestamo prestamo = buildPrestamo(estudiante, libroNoDisponible, Prestamo.EstadoPrestamo.ENTREGADO);
-            libroNoDisponible.setDisponible(false);
 
             when(prestamoRepository.findById(10L)).thenReturn(Optional.of(prestamo));
-            when(libroRepository.save(any(Libro.class))).thenReturn(libroNoDisponible);
+            // Eliminamos el mock innecesario de libroRepository.save
             when(prestamoRepository.save(any(Prestamo.class))).thenReturn(prestamo);
 
             boolean resultado = prestamoService.devolverPrestamo(estudiante, 10L);
@@ -424,19 +429,18 @@ class PrestamoServiceTest {
         }
 
         @Test
-        @DisplayName("Devolución exitosa de libro: el libro queda disponible")
+        @DisplayName("Devolución exitosa de libro: avisa a colaEsperaService")
         void testDevolverLibroQuedaDisponible() {
             estudiante.setId(1L);
             Prestamo prestamo = buildPrestamo(estudiante, libroNoDisponible, Prestamo.EstadoPrestamo.ENTREGADO);
-            libroNoDisponible.setDisponible(false);
 
             when(prestamoRepository.findById(10L)).thenReturn(Optional.of(prestamo));
-            when(libroRepository.save(any(Libro.class))).thenReturn(libroNoDisponible);
             when(prestamoRepository.save(any(Prestamo.class))).thenReturn(prestamo);
 
             prestamoService.devolverPrestamo(estudiante, 10L);
 
-            assertTrue(libroNoDisponible.isDisponible());
+            // Ahora verificamos que avisa a la cola de espera en lugar de asertar la disponibilidad
+            verify(colaEsperaService, times(1)).asignarPrimerUsuarioSiExiste(libroNoDisponible);
         }
 
         @Test
@@ -444,10 +448,8 @@ class PrestamoServiceTest {
         void testDevolverLibroCambiaEstado() {
             estudiante.setId(1L);
             Prestamo prestamo = buildPrestamo(estudiante, libroNoDisponible, Prestamo.EstadoPrestamo.ENTREGADO);
-            libroNoDisponible.setDisponible(false);
 
             when(prestamoRepository.findById(10L)).thenReturn(Optional.of(prestamo));
-            when(libroRepository.save(any(Libro.class))).thenReturn(libroNoDisponible);
             when(prestamoRepository.save(any(Prestamo.class))).thenReturn(prestamo);
 
             prestamoService.devolverPrestamo(estudiante, 10L);
@@ -495,7 +497,7 @@ class PrestamoServiceTest {
         }
 
         @Test
-        @DisplayName("Devolución exitosa de material: el material queda disponible")
+        @DisplayName("Devolución exitosa de material: el material pasa a control de calidad (no disponible)")
         void testDevolverMaterialQuedaDisponible() {
             estudiante.setId(1L);
             materialNoDisponible.setDisponible(false);
@@ -508,7 +510,7 @@ class PrestamoServiceTest {
             boolean resultado = prestamoService.devolverPrestamo(estudiante, 20L);
 
             assertTrue(resultado);
-            assertTrue(materialNoDisponible.isDisponible());
+            assertFalse(materialNoDisponible.isDisponible());
         }
     }
 
@@ -542,22 +544,22 @@ class PrestamoServiceTest {
         }
 
         @Test
-        @DisplayName("Cambiar a DEVUELTO: libera el libro (disponible=true)")
+        @DisplayName("Cambiar a DEVUELTO: llama a colaEsperaService para gestionar reservas")
         void testCambiarEstadoDevueltoLiberaLibro() {
             libroNoDisponible.setDisponible(false);
             Prestamo prestamo = buildPrestamo(estudiante, libroNoDisponible, Prestamo.EstadoPrestamo.ENTREGADO);
 
             when(prestamoRepository.findById(1L)).thenReturn(Optional.of(prestamo));
             when(prestamoRepository.save(any(Prestamo.class))).thenReturn(prestamo);
-            when(libroRepository.save(any(Libro.class))).thenReturn(libroNoDisponible);
 
             prestamoService.cambiarEstadoPrestamo(1L, Prestamo.EstadoPrestamo.DEVUELTO);
 
-            assertTrue(libroNoDisponible.isDisponible());
+            // Verificamos que delega en el sistema de colas
+            verify(colaEsperaService, times(1)).asignarPrimerUsuarioSiExiste(libroNoDisponible);
         }
 
         @Test
-        @DisplayName("Cambiar a DEVUELTO con material: libera el material (disponible=true)")
+        @DisplayName("Cambiar a DEVUELTO con material: el material pasa a control de calidad (no disponible)")
         void testCambiarEstadoDevueltoLiberaMaterial() {
             materialNoDisponible.setDisponible(false);
             Prestamo prestamo = buildPrestamo(estudiante, materialNoDisponible, Prestamo.EstadoPrestamo.ENTREGADO);
@@ -568,7 +570,7 @@ class PrestamoServiceTest {
 
             prestamoService.cambiarEstadoPrestamo(1L, Prestamo.EstadoPrestamo.DEVUELTO);
 
-            assertTrue(materialNoDisponible.isDisponible());
+            assertFalse(materialNoDisponible.isDisponible());
         }
 
         @Test
@@ -599,18 +601,18 @@ class PrestamoServiceTest {
         }
 
         @Test
-        @DisplayName("Cambiar a DEVUELTO: llama a libroRepository.save para liberar el libro")
+        @DisplayName("Cambiar a DEVUELTO: NO guarda el libro directamente")
         void testCambiarEstadoDevueltoGuardaLibro() {
             libroNoDisponible.setDisponible(false);
             Prestamo prestamo = buildPrestamo(estudiante, libroNoDisponible, Prestamo.EstadoPrestamo.ENTREGADO);
 
             when(prestamoRepository.findById(1L)).thenReturn(Optional.of(prestamo));
             when(prestamoRepository.save(any(Prestamo.class))).thenReturn(prestamo);
-            when(libroRepository.save(any(Libro.class))).thenReturn(libroNoDisponible);
 
             prestamoService.cambiarEstadoPrestamo(1L, Prestamo.EstadoPrestamo.DEVUELTO);
 
-            verify(libroRepository, times(1)).save(libroNoDisponible);
+            // Verificamos que el repositorio de libros YA NO es llamado aquí
+            verify(libroRepository, never()).save(any());
         }
     }
 

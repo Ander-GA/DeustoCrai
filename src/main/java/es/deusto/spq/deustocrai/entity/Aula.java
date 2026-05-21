@@ -33,4 +33,9 @@ public class Aula {
     public void setCapacidad(int capacidad) { this.capacidad = capacidad; }
     public boolean isTieneProyector() { return tieneProyector; }
     public void setTieneProyector(boolean tieneProyector) { this.tieneProyector = tieneProyector; }
+
+	public void setId(long l) {
+		// TODO Auto-generated method stub
+		
+	}
 }

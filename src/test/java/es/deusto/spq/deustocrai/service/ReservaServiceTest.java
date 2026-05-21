@@ -1,6 +1,7 @@
 package es.deusto.spq.deustocrai.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
@@ -21,6 +22,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.deusto.spq.deustocrai.dao.ReservaRepository;
+import es.deusto.spq.deustocrai.dao.BloqueoSalaRepository;
+import es.deusto.spq.deustocrai.dao.UserRepository;
+import es.deusto.spq.deustocrai.service.EmailService;
 import es.deusto.spq.deustocrai.entity.Aula;
 import es.deusto.spq.deustocrai.entity.Reserva;
 import es.deusto.spq.deustocrai.entity.User;
@@ -34,6 +38,14 @@ class ReservaServiceTest {
 
     @Mock
     private ReservaRepository reservaRepository;
+    @Mock
+    private es.deusto.spq.deustocrai.dao.BloqueoSalaRepository bloqueoSalaRepository;
+
+    @Mock
+    private es.deusto.spq.deustocrai.dao.UserRepository userRepository;
+
+    @Mock
+    private es.deusto.spq.deustocrai.service.EmailService emailService;
 
     @InjectMocks
     private ReservaService reservaService;
@@ -50,10 +62,14 @@ class ReservaServiceTest {
     void setUp() {
         usuario = new User("Ana", "García", "pass", "ana@deusto.es", User.Role.ESTUDIANTE);
         aula = new Aula("Sala Juntas", 10, true);
+        aula.setId(1L);
 
         base = LocalDateTime.now()
                 .plusDays(1)
                 .withHour(10).withMinute(0).withSecond(0).withNano(0);
+                
+       
+        lenient().when(bloqueoSalaRepository.findByAulaId(any())).thenReturn(Collections.emptyList());
     }
 
     // ─── getReservasPorAula ────────────────────────────────────────────────────────
