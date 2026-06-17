@@ -26,6 +26,14 @@ El backend ha sido diseñado bajo una **arquitectura multicapa**, priorizando la
 *   **DAO (Data Access Object):** Para abstraer y centralizar todas las operaciones de acceso y persistencia en la base de datos MySQL.
 *   **Facade:** Para proporcionar una interfaz unificada y simplificada a los subsistemas más complejos, mejorando la legibilidad y el mantenimiento del código.
 
+## 🧪 Calidad del Código y Automatización
+
+Para garantizar la robustez, escalabilidad y mantenibilidad del sistema, el proyecto integra prácticas estándar de la industria:
+
+*   **Testing Multinivel:** Implementación de pruebas unitarias, tests de integración y pruebas de rendimiento (Performance Tests) para validar la eficiencia de los controladores y la lógica de negocio.
+*   **Integración Continua (CI/CD):** Configuración de flujos de trabajo automatizados mediante **GitHub Actions** para la compilación del proyecto y la ejecución de la batería de tests en cada integración de código.
+*   **Documentación Automatizada:** *Pipeline* específico para la generación y actualización continua de la documentación técnica (Javadoc).
+
 ## 🚀 Funcionalidades Principales
 
 El desarrollo se enfocó en módulos críticos para la operativa diaria de la biblioteca:
