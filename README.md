@@ -40,7 +40,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo local:
 
 1. **Clonar el repositorio:**
 ```bash
-   git clone [https://github.com/Ander-GA/DeustoCrai.git](https://github.com/Ander-GA/DeustoCrai.git)
+   git clone https://github.com/Ander-GA/DeustoCrai.git
 ```
 2. **Configurar la Base de Datos:**
 *  Crear un esquema en MySQL llamado deustocrai_db.
