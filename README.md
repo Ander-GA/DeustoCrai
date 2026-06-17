@@ -1,94 +1,53 @@
-# DeustoCraiApp — Sistema de Gestión de Biblioteca y Salas
+# DeustoCrai - Library & Resource Management System 📚
 
-## Descripción del Proyecto
+[![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)](https://www.java.com/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![MySQL](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Gradle](https://img.shields.io/badge/Gradle-02303A?style=for-the-badge&logo=Gradle&logoColor=white)](https://gradle.org/)
 
-DeustoCraiApp es una aplicación basada en Spring Boot diseñada para digitalizar la gestión de servicios en el CRAI de la Universidad de Deusto. El sistema permite la gestión integral de usuarios, el catálogo de libros, préstamos de recursos y la reserva de salas de estudio con control de disponibilidad en tiempo real.
+## 👥 Contexto de Desarrollo
 
----
+Este sistema ha sido diseñado e implementado como proyecto académico de Ingeniería Informática mediante el trabajo colaborativo de un equipo de 5 estudiantes.
 
-## Requisitos Previos
+## 📝 Descripción del Proyecto
 
-Para construir y ejecutar este proyecto desde cero, necesitarás:
+**DeustoCrai** es un sistema integral de gestión diseñado para optimizar la administración de los recursos del Centro de Recursos para el Aprendizaje y la Investigación (CRAI) de la Universidad de Deusto. 
 
-- Java JDK 21
-- MySQL Server (u otro entorno compatible con JDBC)
-- Gradle (incluido a través del `gradlew` wrapper)
+El proyecto se centra en proporcionar una solución robusta para el control de inventario, la reserva de espacios y el préstamo de materiales, garantizando una experiencia de usuario fluida y una gestión de datos segura.
 
----
+## ⚙️ Arquitectura y Patrones de Diseño
 
-## Configuración de la Base de Datos
+El backend ha sido diseñado bajo una **arquitectura multicapa**, priorizando la escalabilidad, la separación de responsabilidades (SoC) y el bajo acoplamiento. Se han implementado las siguientes metodologías y patrones:
 
-El proyecto utiliza una base de datos MySQL llamada `deustocrai_db`.
+*   **Arquitectura Multicapa (MVC):** Separación lógica en capas de Controladores (gestión de peticiones HTTP), Servicios (lógica de negocio) y Repositorios (acceso a datos).
+*   **API RESTful:** Diseño de endpoints estandarizados para la comunicación entre el cliente y el servidor, utilizando correctamente los verbos HTTP y códigos de estado.
+*   **Inyección de Dependencias (IoC):** Aprovechando el contenedor de Spring Boot para gestionar el ciclo de vida de los componentes y reducir el acoplamiento.
+*   **DTO (Data Transfer Object):** Para encapsular y transportar datos entre la API y el cliente, aislando y protegiendo el modelo de dominio interno.
+*   **DAO (Data Access Object):** Para abstraer y centralizar todas las operaciones de acceso y persistencia en la base de datos MySQL.
+*   **Facade:** Para proporcionar una interfaz unificada y simplificada a los subsistemas más complejos, mejorando la legibilidad y el mantenimiento del código.
 
-1. Asegúrate de que tu servidor MySQL esté en ejecución.
+## 🚀 Funcionalidades Principales
 
-2. Crea la base de datos y el usuario ejecutando el script proporcionado en `/sql/create-deustocrai.sql` o manualmente:
-```sql
--- DB Name: deustocrai_db
--- User:    spq
--- Password: spq
-```
+El desarrollo se enfocó en módulos críticos para la operativa diaria de la biblioteca:
 
----
+*   **Gestión de Préstamos:** Sistema completo para el registro, seguimiento y devolución de material bibliográfico y tecnológico.
+*   **Reserva de Salas:** Módulo de asignación de espacios de estudio con control de disponibilidad en tiempo real.
+*   **Listas de Espera:** Lógica de encolado para gestionar la alta demanda de recursos específicos, notificando a los usuarios según prioridad.
 
-## Instrucciones de Construcción y Ejecución
+## 🛠️ Instalación y Despliegue
 
-Sigue estos pasos para compilar y lanzar la aplicación:
+Sigue estos pasos para desplegar el entorno de desarrollo local:
 
-### 1. Clonar y Compilar
-
-Abre una terminal en la raíz del proyecto y ejecuta:
+1. **Clonar el repositorio:**
 ```bash
-# En Windows
-gradlew.bat build
-
-# En Linux/macOS
-./gradlew build
+   git clone [https://github.com/Ander-GA/DeustoCrai.git](https://github.com/Ander-GA/DeustoCrai.git)
 ```
+2. **Configurar la Base de Datos:**
+*  Crear un esquema en MySQL llamado deustocrai_db.
+*  Actualizar las credenciales en el archivo application.properties (o application.yml).
 
-### 2. Ejecutar la Aplicación
-
-Una vez compilado, puedes iniciar el servidor con:
+3. **Compilar y Ejecutar:**
+*  Utilizando el wrapper de Gradle:
 ```bash
-# Usando Gradle directamente
-./gradlew bootRun
+   ./gradlew bootRun
 ```
-
-La aplicación estará disponible en: http://localhost:8080
-
----
-
-## Características Principales (Sprint 1)
-
-- **Seguridad y Acceso:** Sistema de autenticación con tokens y roles (ESTUDIANTE, BIBLIOTECARIO, ADMIN).
-- **Catálogo de Libros:** Búsqueda y gestión de libros por título, autor e ISBN.
-- **Reservas de Salas:** Gestión de aulas del CRAI con validación de conflictos horarios.
-- **Préstamos:** Registro de préstamos de libros y devoluciones.
-- **Gestión de Material:** Registro de recursos técnicos como portátiles o cámaras.
-
----
-
-## Documentación de la API (Swagger)
-
-El proyecto incluye documentación interactiva de los endpoints. Una vez que la aplicación esté en ejecución, puedes acceder a ella en:
-
-http://localhost:8080/swagger-ui/index.html
-
----
-
-## Datos de Prueba Iniciales
-
-Al arrancar la aplicación, el sistema carga automáticamente un conjunto de datos iniciales que incluye:
-
-- **Usuarios de prueba:** Cuentas para Ander, Iñigo, Emilio, Gaizka y Jacqueline, además de una cuenta de administrador (email: 1, pass: 1).
-- **Salas:** Aula 01, Aula 02 y Aula 03.
-- **Libros:** Títulos de referencia como "Clean Code" y "Design Patterns".
-
----
-
-## Tecnologías Utilizadas
-
-- **Backend:** Java 21, Spring Boot 3.4.0, Spring Data JPA
-- **Base de Datos:** MySQL
-- **Frontend:** HTML5, CSS, JavaScript
-- **Testing:** JUnit 5 y Hamcrest
